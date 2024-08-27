@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testeo de formulario</title>
+    <script src="test_form.js" defer></script>
+
+</head>
+<body>
+    <form action="test_form.html", method="get">
+        <label for="emplazamiento">Emplazamiento:</label>
+        <select id="emplazamiento"  onchange="crear_unidad_academica()">
+            <option value=-1>Seleccionar</option>
+            <option value=1>Casa Central Valparaíso</option>
+            <option value=2>Campus Santiago San Joaquín</option>
+            <option value=3>Campus Santiago Vitacura</option>>
+            <option value=4>Sede Viña del Mar</option>
+            <option value=5>Sede Concepción</option>
+        </select>
+
+        <br><br>
+
+        <label for="unidad_academica">Unidad Académica:</label>
+        <select id="unidad_academica" >
+            <option>Selecciona un departamento</option>
+        </select>
+
+        <br><br>
+
+        <!--Acá van las carreras-->
+
+        <br><br>
+
+        <label for="semestre">Indique en qué semestre se realizará:</label>
+        <select id="semestre">
+            <option value=-1>Seleccionar</option>
+            <option value=1>Primer semestre</option>
+            <option value=2>Segundo semestre</option>
+        </select>
+
+        <br><br>
+
+        <label for="nombre_empresa">Nombre de la Empresa o Institución a visitar :</label>
+        <input type="text" id="nombre_empresa" name="nombre_empresa" required>
+
+        <br><br>
+
+        <label for="fecha">Especificar fecha de la visita :</label>
+        <input type="date" id="fecha" name="fecha" required>
+
+        <br><br>
+
+        <label for="lugar_ciudad"> Indicar lugar y ciudad donde se realizará la visita industrial </label>
+        <input type="text" id="lugar_ciudad" name="lugar_ciudad" required>
+
+        <br><br>
+
+        <label for="sigla_asignatura">Escribir la sigla de la asignatura asociada :</label>
+        <input type="text" id="sigla_asignatura" name="sigla_asignatura" required>
+
+        <br><br>
+
+        <label for="paralelo">Paralelo de la asignatura asociada :</label>
+        <input type="number" id="paralelo" name="paralelo" min="1" step="1" required>
+
+        <br><br>
+
+        <label for="cantidad_alumnos">Indicar la cantidad de estudiantes que asistirán a la visita industrial :</label>
+        <input type="number" id="cantidad_alumnos" name="cantidad_alumnos" min="1" step="1" required>
+
+        <br><br>
+
+        <label for="lista_alumnos">Adjuntar listado de estudiantes, con nombre completo y Rut, sin puntos ni guión (Ej:123456789) :</label>
+        <input type="file" id="lista_alumnos" name="lista_alumnos" accept=".xlsx" required>
+
+        <br><br>
+
+        <label for="nombre_profesor">Nombre del profesor responsable :</label>
+        <input type="text" id="nombre_profesor" name="nombre_profesor" required>
+
+        <br><br>
+
+        <label for="rut_profesor">Ingresar Rut del profesor responsable, <b>sin puntos ni guión</b>  :</label>
+        <input type="text" id="rut_profesor" name="rut_profesor" maxlength="9" minlength="9" required>
+
+        <br><br>
+
+        <label for="correo_usm">Correo USM del profesor responsable  :</label>
+        <input type="email" id="correo_usm" name="correo_usm" required>
+
+        <br><br>
+
+        <label for="concepto">Indique para qué concepto está realizando esta solicitud:</label>
+        <select id="concepto">
+            <option value=-1>Seleccionar</option>
+            <option value=1>Sólo Traslado</option>
+            <option value=2>Traslado y colaciones</option>
+            <option value=3>Sólo colaciones</option>
+        </select>
+
+        <br><br>
+
+        <label for="nombre_proveedor"> Nombre del proveedor seleccionado para realizar el traslado</label>
+        <input type="text" id="nombre_proveedor" name="nombre_proveedor" required>
+
+        <br><br>
+
+        <label for="rut_proveedor">Indicar Rut del proveedor, sin puntos ni guión  :</label>
+        <input type="text" id="rut_proveedor" name="rut_proveedor" maxlength="9" minlength="9" required>
+
+        <br><br>
+
+        <label for="correo_proveedor">Escríbenos el correo de contacto del proveedor   :</label>
+        <input type="email" id="correo_proveedor" name="correo_proveedor" required>
+
+        <br><br>
+
+        <label for="monto_cotizacion">Ingresar monto de la cotización del proveedor seleccionado :</label>
+        <input type="number" id="monto_cotizacion" name="monto_cotizacion" min="1" step="1" required>
+    </form>
+</body>
+</html>
