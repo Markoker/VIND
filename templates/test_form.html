@@ -1,10 +1,12 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Testeo de formulario</title>
-    <script src="test_form.js" defer></script>
+    <script src="{% static 'form.js' %}" defer></script>
 
 </head>
 <body>
@@ -13,22 +15,25 @@
         <select id="emplazamiento"  onchange="crear_unidad_academica()">
             <option value=-1>Seleccionar</option>
             <option value=1>Casa Central Valparaíso</option>
-            <option value=2>Campus Santiago San Joaquín</option>
-            <option value=3>Campus Santiago Vitacura</option>>
-            <option value=4>Sede Viña del Mar</option>
-            <option value=5>Sede Concepción</option>
+            <option value=2>Santiago San Joaquín</option>
+            <option value=3>Santiago Vitacura</option>>
+            <option value=4>Viña del Mar</option>
+            <option value=5>Concepción</option>
         </select>
 
         <br><br>
 
         <label for="unidad_academica">Unidad Académica:</label>
-        <select id="unidad_academica" >
+        <select id="unidad_academica" onchange="crear_carreras()" >
             <option>Selecciona un departamento</option>
         </select>
 
         <br><br>
 
-        <!--Acá van las carreras-->
+        <label for="carrera">Carrera:</label>
+        <select id="carrera">
+            <option>Selecciona una carrera</option>
+        </select>
 
         <br><br>
 
@@ -118,6 +123,30 @@
 
         <label for="monto_cotizacion">Ingresar monto de la cotización del proveedor seleccionado :</label>
         <input type="number" id="monto_cotizacion" name="monto_cotizacion" min="1" step="1" required>
-    </form>
+
+        <br><br>
+
+        <label for="archivo_cotizacion">Adjuntar cotización del servicio de transporte seleccionado para realizar la visita industrial  :</label>
+        <input type="file" id="archivo_cotizacion" name="archivo_cotizacion" accept=".pdf" required>
+
+        <br><br>
+
+        <label for="Segundo_archivo">Adjuntar segunda cotización </label>
+        <input type="file" id="Segundo_archivo" name="Segundo_archivo" accept=".pdf">
+        
+        <br><br>
+
+        <label for="tercer_archivo">Adjuntar tercera cotización </label>
+        <input type="file" id="tercer_archivo" name="tercer_archivo" accept=".pdf">
+
+        <br><br>
+
+        <label for="funcionario">Indícanos el nombre de la persona a quien contactar por el registro de esta visita industrial </label>
+        <input type="text" id="funcionario" name="funcionario">
+
+        <br><br>
+
+        <label for="correo_funcionario">Y el correo de contacto  </label>
+        <input type="email" id="correo_funcionario" name="correo_funcionario">
 </body>
 </html>
