@@ -9,7 +9,7 @@ class Solicitud(models.Model):
     descripcion = models.TextField()
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     sigla_asignatura = models.CharField(max_length=8)
-    paralelo = models.IntegerField()
+    paralelo = models.PositiveIntegerField()
 
 
     def __str__(self):
@@ -17,7 +17,7 @@ class Solicitud(models.Model):
 
 
 class Usuario(models.Model):
-    rut = models.CharField(max_length=16, primary_key=True)
+    rut = models.CharField(max_length=10, primary_key=True)
     nombre = models.CharField(max_length=64)
     correo = models.EmailField()
     telefono = models.CharField(max_length=16)
@@ -29,10 +29,15 @@ class Usuario(models.Model):
 
 # Cotizacion necesita guardar archivos PDF
 class Cotizacion(models.Model):
+    TIPO_CHOICES = [
+        ('Solo traslado', 'Sólo traslado'),
+        ('Solo colacion', 'Sólo colación'),
+        ('Traslado y colacion', 'Traslado y colaciones'),
+    ]
     id_cotizacion = models.AutoField(primary_key=True)
     es_principal = models.BooleanField()
     monto = models.IntegerField()
-    tipo = models.CharField(max_length=16)  # Traslado, colacion
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
     archivo = models.FileField(upload_to='cotizaciones/')
     solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
     estado = models.CharField(max_length=16)  # Rechazado, Pendiente, Pagado
@@ -65,10 +70,11 @@ class UnidadAcademica(models.Model):
 
 class Visita(models.Model):
     id_visita = models.AutoField(primary_key=True)
+    nombre_empresa = models.CharField(max_length=64, default='NN')
     fecha = models.DateField()
     semestre = models.CharField(max_length=5)
     lugar = models.CharField(max_length=64)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
+    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True)
     profesor_encargado = models.ForeignKey('Usuario', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -81,3 +87,17 @@ class Estudiantes(models.Model):
 
     def __str__(self):
         return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
+    
+
+class Campus(models.Model):
+    nombre = models.CharField(max_length=64)
+
+class Edificio(models.Model):
+    nombre = models.CharField(max_length=64)
+    campus = models.ForeignKey(Campus, on_delete=models.CASCADE)
+
+class Carrera(models.Model):
+    nombre = models.CharField(max_length=64)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE)
+
+# son o 1 o 3 cotizaciones

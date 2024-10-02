@@ -21,4 +21,13 @@ from main.views import *
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', form),
+    path('solicitud/', solicitud),
+    path('cotizacion/', cotizacion),
+    path('reembolso/', Reembolso),
+    path('unidad_academica/', unidad_academica_view, name='unidad_academica'),
+    path('ajax/get_edificios/', get_edificios, name='get_edificios'),
+    path('ajax/get_carreras/', get_carreras, name='get_carreras'),
+    path('visita/', visita_view, name='visita_view'),
+    path('estudiantes/', estudiantes_view, name='estudiantes_view'),
+    path('profesor/', profesor_view, name='profesor_view'),
 ]

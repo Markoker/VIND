@@ -48,9 +48,6 @@ const data = {
     }
 }
 
-
-
-
 function crear_unidad_academica() {
     const sede = document.getElementById("emplazamiento").value;
     const unidadSelect = document.getElementById("unidad_academica");

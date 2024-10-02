@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unidad Académica</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js" defer></script>
+</head>
+<body>
+    <form method="post" id="unidad_academicaForm">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Siguiente</button>
+        <br><br>
+
+
+
+        <!-- 
+        <label for="emplazamiento">Emplazamiento:</label>
+        <select id="emplazamiento" name="emplazamiento" onchange="crear_unidad_academica()">
+            <option value=-1>Seleccionar</option>
+            <option value=1>Casa Central Valparaíso</option>
+            <option value=2>Santiago San Joaquín</option>
+            <option value=3>Santiago Vitacura</option>>
+            <option value=4>Viña del Mar</option>
+            <option value=5>Concepción</option>
+        </select>
+
+        <br><br>
+
+        <label for="unidad_academica">Unidad Académica:</label>
+        <select id="unidad_academica" name="unidad_academica" onchange="crear_carreras()" >
+            <option>Selecciona un departamento</option>
+        </select>
+
+        <br><br>
+
+        <label for="carrera">Carrera:</label>
+        <select id="carrera" name="carrera">
+            <option>Selecciona una carrera</option>
+        </select>
+
+        <br><br>
+
+        <button type="submit">Siguiente</button>
+    -->
+    </form>
+
+    <script>
+        $("#id_emplazamiento").change(function() {
+            var url = "{% url 'get_edificios' %}";
+            var emplazamientoId = $(this).val();
+            $.ajax({
+                url: url,
+                data: {
+                    'campus_id': emplazamientoId
+                },
+                
+                success: function(data) {
+                    $("#id_unidad_academica").html(data);
+                }
+            });
+
+            $("#id_unidad_academica").change(function() {
+                var url = "{% url 'get_carreras' %}";
+                var unidadAcademicaId = $(this).val();
+                $.ajax({
+                    url: url,
+                    data: {
+                        'edificio_id': unidadAcademicaId
+                    },
+                    success: function(data) {
+                        $("#id_carrera").html(data);
+                    }
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
