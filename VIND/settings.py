@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main.apps.MainConfig',
+    'main',
 ]
 
 MIDDLEWARE = [
@@ -78,9 +78,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'vind',
         'USER': 'postgres',
-        'PASSWORD': 'LosTr3s',
         'HOST': 'localhost',
-        'PORT': '5433',
+        'PORT': '',
     }
 }
 
@@ -124,8 +123,33 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
 
+AUTH_USER_MODEL = 'main.Usuario'
+AUTHENTICATION_BACKENDS = ['main.backend.EmailBackend',
+                           'django.contrib.auth.backends.ModelBackend']
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+'''LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'your_app_name': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}'''

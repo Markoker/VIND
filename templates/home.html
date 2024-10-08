@@ -1,0 +1,12 @@
+<h2>Hola</h2>
+
+{% if user.is_authenticated %}
+    <p>Usuario autenticado {{ user.email }}</p>
+{% else %}
+    <p>Usuario no autenticado</p>
+{% endif %}
+
+<a href="{% url 'funcionario' %}">Funcionario</a>
+<p>Ingeniero</p>
+<p>Subdirector</p>
+<p>Director</p>

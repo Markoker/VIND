@@ -8,20 +8,14 @@
 <body>
     <form method="post">
         {% csrf_token %}
-        <h2>Detalles de la Visita</h2>
+        <h2>Iniciar sesión</h2>
         
         {% if messages %}
-            <ul>
-                {% for message in messages %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
+            <p>{{ messages.0.message }}</p>
         {% endif %}
         
         {{ form.as_p }}
-        <button type="submit">Siguiente</button>
+        <button type="submit">Iniciar sesión</button>
     </form>
-
-    
 </body>
 </html>
