@@ -20,45 +20,54 @@ class UsuarioForm(forms.ModelForm):
 class CotizacionForm(forms.ModelForm):
     class Meta:
         model = Cotizacion
-        fields = ['es_principal', 'monto', 'archivo', 'solicitud', 'estado']
-        widgets = {
-            'tipo': forms.Select(choices=Cotizacion.TIPO_CHOICES),
-        }
+        fields = ['tipo', 'nombre_proveedor', 'rut_proveedor', 'correo_proveedor',
+                   'monto', 'cotizacion_1', 'cotizacion_2', 'cotizacion_3', 'correo_presupuesto',
+                   'tipo_subvencion', 'monto_individual']
+    def __init__(self, *args, **kwargs):
+        super(CotizacionForm, self).__init__(*args, **kwargs)
+        self.fields['nombre_proveedor'].required = False
+        self.fields['rut_proveedor'].required = False
+        self.fields['correo_proveedor'].required = False
+        self.fields['monto'].required = False
+        self.fields['cotizacion_1'].required = False
+        self.fields['cotizacion_2'].required = False
+        self.fields['cotizacion_3'].required = False
+        self.fields['correo_presupuesto'].required = False
+        self.fields['tipo_subvencion'].required = False
+        self.fields['monto_individual'].required = False
+
     def clean(self):
         cleaned_data = super().clean()
-        tipo = cleaned_data.get("tipo")
-        if tipo == "Solo Traslado":
-            if not cleaned_data.get("archivo"):
-                self.add_error('archivo', "Este campo es requerido")
-        elif tipo == "Solo Colacion":
-            if not cleaned_data.get("archivo"):
-                self.add_error('archivo', "Este campo es requerido")
-        elif tipo == "Traslado y Colacion":
-            if not cleaned_data.get("archivo"):
-                self.add_error('archivo', "Este campo es requerido")
-        return cleaned_data
-        
+        tipo = cleaned_data.get('tipo')
+        monto = cleaned_data.get('monto')
+        tipo_subvencion = cleaned_data.get('tipo_subvencion')
+        monto_individual= cleaned_data.get('monto_individual')
+        if not cleaned_data.get('primera_cotizacion'):
+            self.add_error('primera_cotizacion', 'Adjunta al menos una cotización.')
+        if tipo == 'Solo traslado' or tipo == 'Traslado y colacion':
+            if monto and monto > 1000000:
+                if not(cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3')):
+                    if not(cleaned_data.get('correo_presupuesto')):
+                        self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
+        if tipo == 'Solo colacion' or tipo == 'Traslado y colacion':
+            total = monto_individual * 2 if monto_individual else 0 #temporal
+            if total > 3 * 29360:
+                if not(cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3')):
+                    if not(cleaned_data.get('correo_presupuesto')):
+                        self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
 
 
-class ReembolsoForm(forms.ModelForm):
-    class Meta:
-        model = Reembolso
-        fields = ['monto', 'fecha_pago', 'estado', 'solicitud', 'usuario', 'fecha_visita']
-
-class UnidadAcademicaForm(forms.ModelForm):
-    emplazamiento = forms.ModelChoiceField(queryset=Campus.objects.all(), label='Emplazamiento')
-    unidad_academica = forms.ModelChoiceField(queryset=Edificio.objects.none(), label='Unidad Academica')
-    carrera = forms.ModelChoiceField(queryset=Carrera.objects.none(), label='Carrera')
-    '''
-    class Meta:
-        model = UnidadAcademica
-        fields = ['nombre', 'presupuesto', 'gasto', 'emplazamiento']
-    '''
 
 class VisitaForm(forms.ModelForm):
     fecha = forms.DateField(
-        input_formats=['%d-%m-%Y'],  
-        widget=forms.DateInput(format='%d-%m-%Y', attrs={'placeholder': 'dd-mm-yyyy'})
+        widget=forms.DateInput(
+            attrs={
+                'type': 'date',
+                'min': timezone.now().date().strftime('%Y-%m-%d'),  # Establece la fecha mínima como la actual
+                'placeholder': 'dd-mm-yyyy'
+            }
+        ),
+        input_formats=['%Y-%m-%d'],
     )
      
     class Meta:
@@ -83,3 +92,40 @@ class ProfesorForm(forms.ModelForm):
         model = Usuario
         fields = ['rut', 'nombre', 'correo']
 
+class AsignaturaForm(forms.ModelForm):
+    class Meta:
+        model = Asignatura
+        fields = ['campus', 'departamento', 'semestre', 'sigla', 'paralelo']
+    def __init__(self, *args, **kwargs):
+        campus_opciones = kwargs.pop('campus_opciones', [])
+        unidades_opciones = kwargs.pop('unidades_opciones', [])
+        semestre_opciones = kwargs.pop('semestre_opciones', [])
+        asignaturas_opciones = kwargs.pop('asignaturas_opciones', [])
+        paralelos_opciones = kwargs.pop('paralelos_opciones', [])
+
+        super().__init__(*args, **kwargs)
+
+        self.fields['campus'] = forms.ChoiceField(
+            choices=[(c, c) for c in campus_opciones], 
+            label="Seleccione el campus"
+        )
+        
+        self.fields['departamento'] = forms.ChoiceField(
+            choices=[('', 'Seleccione una unidad académica')] + [(u['DEPARTAMENTO'], u['DEPARTAMENTO']) for u in unidades_opciones], 
+            label="Seleccione la unidad académica"
+        )
+        
+        self.fields['semestre'] = forms.ChoiceField(
+            choices=[(s, s) for s in semestre_opciones], 
+            label="Seleccione el semestre"
+        )
+        
+        self.fields['sigla'] = forms.ChoiceField(
+            choices=[('', 'Seleccione una asignatura')] + [(a['SIGLA'], a['SIGLA']) for a in asignaturas_opciones], 
+            label="Seleccione la asignatura"
+        )
+        
+        self.fields['paralelo'] = forms.ChoiceField(
+            choices=[('', 'Seleccione un paralelo')] + [(p['PARALELO'], p['PARALELO']) for p in paralelos_opciones], 
+            label="Seleccione el paralelo"
+        )

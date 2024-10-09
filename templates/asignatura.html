@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('#id_campus').change(function(){
+                var selectedCampus = $(this).val();
+                if(selectedCampus){
+                    console.log("Selected campus:", selectedCampus);
+                    $.ajax({
+                        url: '{% url "get_unidades" %}',
+                        data: {
+                            'campus': selectedCampus
+                        },
+                        success: function(data){
+                            $('#id_departamento').empty();
+                            $('#id_departamento').append('<option value="">Seleccione una unidad académica</option>');
+                            $.each(data.unidades_academicas, function(key, value){
+                                $('#id_departamento').append('<option value="'+value+'">'+value+'</option>');
+                            });
+                        }
+                    });
+                }
+            });
+            $('#id_departamento, #id_semestre').change(function(){
+                var selectedUnidad = $('#id_departamento').val();
+                var selectedSemestre = $('#id_semestre').val();
+                var selectedCampus = $('#id_campus').val();
+                if (selectedUnidad && selectedSemestre){
+                    console.log("Selected unidad:", selectedUnidad);
+                    console.log("Selected semestre:", selectedSemestre);
+                    console.log("Selected campus:", selectedCampus);
+                    $.ajax({
+                        url: '{% url "get_asignaturas" %}',
+                        data: {
+                            'unidad': selectedUnidad,
+                            'semestre': selectedSemestre,
+                            'campus': selectedCampus
+                        },
+                        success: function(data){
+                            console.log("Asignaturas recibidas:", data.asignaturas);
+                            $('#id_sigla').empty();  
+                            $('#id_sigla').append('<option value="">Seleccione una asignatura</option>');
+                            $.each(data.asignaturas, function(index, asignatura){
+                                $('#id_sigla').append('<option value="'+asignatura.sigla+'">'+asignatura.nombre+'</option>');
+                            });
+                        }
+                    });
+                }
+            });
+            $('#id_sigla').change(function(){
+                var selectedAsignatura = $(this).val();
+                var selectedUnidad = $('#id_departamento').val();
+                var selectedSemestre = $('#id_semestre').val();
+                var selectedCampus = $('#id_campus').val();
+                if(selectedAsignatura && selectedUnidad && selectedSemestre){
+                    console.log("Selected asignatura:", selectedAsignatura);
+                    console.log("Selected unidad:", selectedUnidad);
+                    console.log("Selected semestre:", selectedSemestre);
+                    console.log("Selected campus:", selectedCampus);
+                    $.ajax({
+                        url: '{% url "get_paralelos" %}',
+                        data: {
+                            'asignatura': selectedAsignatura,
+                            'unidad': selectedUnidad,
+                            'semestre': selectedSemestre,
+                            'campus': selectedCampus
+                        },
+                        success: function(data){
+                            console.log("Paralelos recibidos:", data.paralelos);
+                            $('#id_paralelo').empty();
+                            $('#id_paralelo').append('<option value="">Seleccione un paralelo</option>');
+                            
+                            // Añadimos las nuevas opciones
+                            $.each(data.paralelos, function(key, value) {
+                                $('#id_paralelo').append('<option value="'+value+'">'+value+'</option>');
+                        });
+                    }
+                });
+            }
+        });
+    });
+    </script>
+</head>
+<body>
+    <h1>Seleccionar Asignatura</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Siguiente</button>
+    </form>
+</body>
+</html>

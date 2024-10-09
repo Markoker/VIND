@@ -6,7 +6,7 @@ class Solicitud(models.Model):
     id_solicitud = models.AutoField(primary_key=True)
     fecha = models.DateField()
     estado = models.CharField(max_length=16)  # Rechazado, Pendiente, Revisado, Autorizado, Aprobado, Finalizado
-    descripcion = models.TextField()
+    descripcion = models.TextField() 
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     sigla_asignatura = models.CharField(max_length=8)
     paralelo = models.PositiveIntegerField()
@@ -34,13 +34,27 @@ class Cotizacion(models.Model):
         ('Solo colacion', 'Sólo colación'),
         ('Traslado y colacion', 'Traslado y colaciones'),
     ]
-    id_cotizacion = models.AutoField(primary_key=True)
-    es_principal = models.BooleanField()
-    monto = models.IntegerField()
+    SUBVENCION_CHOICES = [
+        ('reembolso', 'Reembolso'),
+        ('presupuesto', 'Previa presupuestación')
+    ]
     tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    archivo = models.FileField(upload_to='cotizaciones/')
+
+    nombre_proveedor = models.CharField(max_length=255, blank=True, null=True)
+    rut_proveedor = models.CharField(max_length=20, blank=True, null=True)
+    correo_proveedor = models.EmailField(blank=True, null=True)
+    
+    id_cotizacion = models.AutoField(primary_key=True)
+    monto = models.PositiveIntegerField()
+    cotizacion_1 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+
+    tipo_subvencion = models.CharField(max_length=20, choices=SUBVENCION_CHOICES, blank=True, null=True)
+    monto_individual = models.PositiveIntegerField(blank=True, null=True)
     solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
-    estado = models.CharField(max_length=16)  # Rechazado, Pendiente, Pagado
+    correo_presupuesto = models.EmailField(null=True, blank=True)
+    estado = models.CharField(max_length=16, default='Pendiente') 
 
 
     def __str__(self):
@@ -88,16 +102,14 @@ class Estudiantes(models.Model):
     def __str__(self):
         return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
     
+class Asignatura(models.Model):
+    sigla = models.CharField(max_length=8, primary_key=True)
+    semestre = models.PositiveIntegerField()
+    departamento = models.CharField(max_length=64)
+    campus = models.CharField(max_length=64)
+    paralelo = models.PositiveIntegerField()
 
-class Campus(models.Model):
-    nombre = models.CharField(max_length=64)
-
-class Edificio(models.Model):
-    nombre = models.CharField(max_length=64)
-    campus = models.ForeignKey(Campus, on_delete=models.CASCADE)
-
-class Carrera(models.Model):
-    nombre = models.CharField(max_length=64)
-    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE)
+    def __str__(self):
+        return f"{self.sigla} - {self.nombre} - {self.semestre} - {self.departamento} - {self.campus}"
 
 # son o 1 o 3 cotizaciones
