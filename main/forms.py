@@ -81,8 +81,8 @@ class CotizacionForm(forms.ModelForm):
         monto = cleaned_data.get('monto')
         tipo_subvencion = cleaned_data.get('tipo_subvencion')
         monto_individual= cleaned_data.get('monto_individual')
-        if not cleaned_data.get('primera_cotizacion'):
-            self.add_error('primera_cotizacion', 'Adjunta al menos una cotización.')
+        if not cleaned_data.get('cotizacion_1'):
+            self.add_error('cotizacion_1', 'Adjunta al menos una cotización.')
         if tipo == 'Solo traslado' or tipo == 'Traslado y colacion':
             if monto and monto > 1000000:
                 if not(cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3')):

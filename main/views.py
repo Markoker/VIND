@@ -40,6 +40,9 @@ def load_users(request):
 
     return redirect('login')
 
+def landing_view(request):
+    return render(request, 'landing.html')
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -75,12 +78,13 @@ def home_view(request):
 
 @check_user_role('funcionario')
 def funcionario_view(request):
-    return HttpResponse("Funcionario")
+    return render(request, 'funcionario.html')
 
 
 def form(request):
     return render(request, 'test_form.html')
 
+@check_user_role('funcionario')
 def visita_view(request):
     if request.method == 'POST':
         form = VisitaForm(request.POST)
@@ -93,6 +97,7 @@ def visita_view(request):
         form = VisitaForm()
     return render(request, 'visita.html', {'form': form})
 
+@check_user_role('funcionario')
 def estudiantes_view(request):
     if request.method == 'POST':
         form = EstudiantesForm(request.POST)
@@ -103,6 +108,7 @@ def estudiantes_view(request):
         form = EstudiantesForm()
     return render(request, 'estudiantes.html', {'form': form})
 
+@check_user_role('funcionario')
 def profesor_view(request):
     if request.method == 'POST':
         form = ProfesorForm(request.POST)
@@ -128,6 +134,7 @@ def profesor_view(request):
         form = ProfesorForm()
     return render(request, 'profesor.html', {'form': form})
 
+@check_user_role('funcionario')
 def asignatura_view(request):
     archivo = 'main/data/REPORTE ASIGNATURAS 2024.xlsx'
     campus_opciones, unidades_opciones, semestre_opciones, asignaturas_opciones, paralelos_opciones = cargar(archivo)
@@ -207,6 +214,7 @@ def solicitud(request):
     form = SolicitudForm()
     return render(request, 'solicitud.html', {'form': form, 'submission': submission})
 
+@check_user_role('funcionario')
 def cotizacion_view(request):
     if request.method == 'POST':
         form = CotizacionForm(request.POST, request.FILES)

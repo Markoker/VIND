@@ -16,7 +16,6 @@ class Solicitud(models.Model):
     sigla_asignatura = models.CharField(max_length=8)
     paralelo = models.PositiveIntegerField()
 
-
     def __str__(self):
         return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
 
@@ -98,13 +97,12 @@ class Cotizacion(models.Model):
 
     tipo_subvencion = models.CharField(max_length=20, choices=SUBVENCION_CHOICES, blank=True, null=True)
     monto_individual = models.PositiveIntegerField(blank=True, null=True)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
+    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True, blank=True)
     correo_presupuesto = models.EmailField(null=True, blank=True)
     estado = models.CharField(max_length=16, default='Pendiente')
 
-
     def __str__(self):
-        return f"Cotizacion de {self.tipo} por ${self.monto} - {self.solicitud}"
+        return f"Cotizacion {'Primaria' if (self.es_principal) else ''} de {self.tipo} por ${self.monto} - {self.solicitud}"
 
 class Reembolso(models.Model):
     id_reembolso = models.AutoField(primary_key=True)
@@ -116,7 +114,8 @@ class Reembolso(models.Model):
     fecha_visita = models.DateField()
 
     def __str__(self):
-        return f"Reembolso de ${self.monto} - {self.fecha_pago} - {self.estado} - {self.solicitud} - {self.usuario}"
+        return f"Reembolso de ${self.monto} - {self.estado} - {self.solicitud} - {self.usuario}"
+
 
 class UnidadAcademica(models.Model):
     id_unidad_academica = models.AutoField(primary_key=True)
@@ -127,6 +126,7 @@ class UnidadAcademica(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - ${self.presupuesto} - ${self.gasto} - {self.emplazamiento}"
+
 
 class Visita(models.Model):
     id_visita = models.AutoField(primary_key=True)
@@ -148,7 +148,7 @@ class Estudiantes(models.Model):
 
     def __str__(self):
         return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
-    
+
 class Asignatura(models.Model):
     sigla = models.CharField(max_length=8, primary_key=True)
     semestre = models.PositiveIntegerField()
