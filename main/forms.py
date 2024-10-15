@@ -42,7 +42,7 @@ class CotizacionForm(forms.ModelForm):
         monto = cleaned_data.get('monto')
         tipo_subvencion = cleaned_data.get('tipo_subvencion')
         monto_individual= cleaned_data.get('monto_individual')
-        if not cleaned_data.get('primera_cotizacion'):
+        if not cleaned_data.get('cotizacion_1'):
             self.add_error('primera_cotizacion', 'Adjunta al menos una cotización.')
         if tipo == 'Solo traslado' or tipo == 'Traslado y colacion':
             if monto and monto > 1000000:
@@ -129,3 +129,4 @@ class AsignaturaForm(forms.ModelForm):
             choices=[('', 'Seleccione un paralelo')] + [(p['PARALELO'], p['PARALELO']) for p in paralelos_opciones], 
             label="Seleccione el paralelo"
         )
+        

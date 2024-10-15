@@ -52,7 +52,7 @@ class Cotizacion(models.Model):
 
     tipo_subvencion = models.CharField(max_length=20, choices=SUBVENCION_CHOICES, blank=True, null=True)
     monto_individual = models.PositiveIntegerField(blank=True, null=True)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
+    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True, blank=True)
     correo_presupuesto = models.EmailField(null=True, blank=True)
     estado = models.CharField(max_length=16, default='Pendiente') 
 
@@ -88,7 +88,7 @@ class Visita(models.Model):
     fecha = models.DateField()
     semestre = models.CharField(max_length=5)
     lugar = models.CharField(max_length=64)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True)
+    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True, blank=True)
     profesor_encargado = models.ForeignKey('Usuario', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -101,9 +101,10 @@ class Estudiantes(models.Model):
 
     def __str__(self):
         return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
-    
+
 class Asignatura(models.Model):
-    sigla = models.CharField(max_length=8, primary_key=True)
+    id_asignatura = models.AutoField(primary_key=True)
+    sigla = models.CharField(max_length=8)
     semestre = models.PositiveIntegerField()
     departamento = models.CharField(max_length=64)
     campus = models.CharField(max_length=64)

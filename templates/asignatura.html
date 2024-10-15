@@ -7,6 +7,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript">
         $(document).ready(function(){
+            $('#id_campus').prepend('<option value="" selected>Seleccione un campus</option>');
             $('#id_campus').change(function(){
                 var selectedCampus = $(this).val();
                 if(selectedCampus){

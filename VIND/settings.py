@@ -76,7 +76,7 @@ WSGI_APPLICATION = 'VIND.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'vind',
+        'NAME': 'vind2',
         'USER': 'postgres',
         'PASSWORD': 'LosTr3s',
         'HOST': 'localhost',
