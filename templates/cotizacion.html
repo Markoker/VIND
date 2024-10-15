@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizacion</title>
+</head>
+<body>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p id="instructivo-presupuestacion" style="display:none;">
+            Complete el siguiente archivo: <a href="/path/to/archivo">archivo a completar</a>. 
+            Luego adjunte las boletas de compra y envíe al siguiente correo: <a href="mailto:correo@example.com">correo@example.com</a>.
+        </p>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var tipoField = document.getElementById('id_tipo');
+                var montoField = document.getElementById('id_monto');
+                var tipoSubvencionField = document.getElementById('id_tipo_subvencion');
+                var montoPorPersonaField = document.getElementById('id_monto_individual');
+        
+                var proveedorFields = ['id_nombre_proveedor', 'id_rut_proveedor', 'id_correo_proveedor'];
+                var cotizacionFields = ['id_cotizacion_1', 'id_cotizacion_2', 'id_cotizacion_3', 'id_correo_presupuesto'];
+                var instructivoPresupuestacion = document.getElementById('instructivo-presupuestacion');
+        
+                function toggleFields() {
+                    var tipo = tipoField.value;
+                    var monto = parseFloat(montoField.value) || 0;
+                    var montoPorPersona = parseFloat(montoPorPersonaField.value) || 0;
+        
+                    // Mostrar u ocultar campos relacionados con proveedores (para traslado o ambos)
+                    var showProveedor = (tipo === 'Solo traslado' || tipo === 'Traslado y colacion');
+                    proveedorFields.forEach(function (fieldId) {
+                        document.getElementById(fieldId).closest('p').style.display = showProveedor ? '' : 'none';
+                    });
+        
+                    // Mostrar campo de monto para traslado o ambos
+                    montoField.closest('p').style.display = showProveedor ? '' : 'none';
+        
+                    // Mostrar campos de tipo de subvención para colación o ambos
+                    var showSubvencion = (tipo === 'Solo colacion' || tipo === 'Traslado y colacion');
+                    tipoSubvencionField.closest('p').style.display = showSubvencion ? '' : 'none';
+        
+                    // Mostrar campos de monto por persona si es colación o ambos
+                    montoPorPersonaField.closest('p').style.display = showSubvencion ? '' : 'none';
+        
+                    // Mostrar siempre la primera cotización
+                    document.getElementById('id_cotizacion_1').closest('p').style.display = '';
+        
+                    // Mostrar/ocultar las otras dos cotizaciones según el monto y tipo
+                    var showAdditionalCotizacion = false;
+                    if (tipo === 'Solo traslado' && monto > 1000000) {
+                        showAdditionalCotizacion = true;
+                    } else if (tipo === 'Solo colacion' && (montoPorPersona * 10) > (3 * 29360)) {
+                        showAdditionalCotizacion = true;
+                    } else if (tipo === 'Traslado y colacion' && ((monto > 1000000) || (montoPorPersona * 10 > (3 * 29360)))) {
+                        showAdditionalCotizacion = true;
+                    }
+        
+                    // Mostrar u ocultar la segunda y tercera cotización
+                    for (var i = 1; i < cotizacionFields.length - 1; i++) { // Ajustado para excluir 'id_correo_presupuesto'
+                        document.getElementById(cotizacionFields[i]).closest('p').style.display = showAdditionalCotizacion ? '' : 'none';
+                    }
+        
+                    // Mostrar el campo del correo de presupuestación si las dos cotizaciones adicionales son necesarias
+                    document.getElementById('id_correo_presupuesto').closest('p').style.display = showAdditionalCotizacion ? '' : 'none';
+        
+                    // Mostrar el instructivo para reembolso
+                    instructivoPresupuestacion.style.display = (tipoSubvencionField.value === 'reembolso') ? '' : 'none';
+                }
+        
+                tipoField.addEventListener('change', toggleFields);
+                montoField.addEventListener('input', toggleFields);
+                montoPorPersonaField.addEventListener('input', toggleFields);
+                tipoSubvencionField.addEventListener('change', toggleFields);
+                toggleFields();  // Ejecutar al cargar la página
+            });
+        </script>
+        
+        <button type="submit">Enviar</button>
+    </form>
+</body>
+</html>

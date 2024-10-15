@@ -16,6 +16,7 @@ class Solicitud(models.Model):
     sigla_asignatura = models.CharField(max_length=8)
     paralelo = models.PositiveIntegerField()
 
+
     def __str__(self):
         return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
 
@@ -79,17 +80,31 @@ class Cotizacion(models.Model):
         ('Solo colacion', 'Sólo colación'),
         ('Traslado y colacion', 'Traslado y colaciones'),
     ]
-    id_cotizacion = models.AutoField(primary_key=True)
-    es_principal = models.BooleanField()
-    monto = models.IntegerField()
+    SUBVENCION_CHOICES = [
+        ('reembolso', 'Reembolso'),
+        ('presupuesto', 'Previa presupuestación')
+    ]
     tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    archivo = models.FileField(upload_to='cotizaciones/')
+
+    nombre_proveedor = models.CharField(max_length=255, blank=True, null=True)
+    rut_proveedor = models.CharField(max_length=20, blank=True, null=True)
+    correo_proveedor = models.EmailField(blank=True, null=True)
+
+    id_cotizacion = models.AutoField(primary_key=True)
+    monto = models.PositiveIntegerField()
+    cotizacion_1 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+
+    tipo_subvencion = models.CharField(max_length=20, choices=SUBVENCION_CHOICES, blank=True, null=True)
+    monto_individual = models.PositiveIntegerField(blank=True, null=True)
     solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
-    estado = models.CharField(max_length=16)  # Rechazado, Pendiente, Pagado
+    correo_presupuesto = models.EmailField(null=True, blank=True)
+    estado = models.CharField(max_length=16, default='Pendiente')
+
 
     def __str__(self):
-        return f"Cotizacion {'Primaria' if self.es_principal else ''} de {self.tipo} por ${self.monto} - {self.solicitud}"
-
+        return f"Cotizacion de {self.tipo} por ${self.monto} - {self.solicitud}"
 
 class Reembolso(models.Model):
     id_reembolso = models.AutoField(primary_key=True)
@@ -101,8 +116,7 @@ class Reembolso(models.Model):
     fecha_visita = models.DateField()
 
     def __str__(self):
-        return f"Reembolso de ${self.monto} - {self.estado} - {self.solicitud} - {self.usuario}"
-
+        return f"Reembolso de ${self.monto} - {self.fecha_pago} - {self.estado} - {self.solicitud} - {self.usuario}"
 
 class UnidadAcademica(models.Model):
     id_unidad_academica = models.AutoField(primary_key=True)
@@ -113,7 +127,6 @@ class UnidadAcademica(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - ${self.presupuesto} - ${self.gasto} - {self.emplazamiento}"
-
 
 class Visita(models.Model):
     id_visita = models.AutoField(primary_key=True)
@@ -135,17 +148,15 @@ class Estudiantes(models.Model):
 
     def __str__(self):
         return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
+    
+class Asignatura(models.Model):
+    sigla = models.CharField(max_length=8, primary_key=True)
+    semestre = models.PositiveIntegerField()
+    departamento = models.CharField(max_length=64)
+    campus = models.CharField(max_length=64)
+    paralelo = models.PositiveIntegerField()
 
+    def __str__(self):
+        return f"{self.sigla} - {self.semestre} - {self.departamento} - {self.campus}"
 
-class Campus(models.Model):
-    nombre = models.CharField(max_length=64)
-
-
-class Edificio(models.Model):
-    nombre = models.CharField(max_length=64)
-    campus = models.ForeignKey(Campus, on_delete=models.CASCADE)
-
-
-class Carrera(models.Model):
-    nombre = models.CharField(max_length=64)
-    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE)
+# son o 1 o 3 cotizaciones
