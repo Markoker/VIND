@@ -22,7 +22,6 @@ urlpatterns = [
 path('', landing_view, name='landing'),
 path('login/', login_view, name='login'),
 path('home/', home_view, name='home'),
-path('load_users/', load_users, name='load_users'),
 path('funcionario/', funcionario_view, name='funcionario'),
 path('funcionario/crear_solicitud/', asignatura_view, name='crear_solicitud'),
 path('funcionario/crear_solicitud/get_unidades', get_unidades, name='get_unidades'),
@@ -32,6 +31,13 @@ path('funcionario/crear_solicitud/visita/', visita_view, name='visita_view'),
 path('funcionario/crear_solicitud/estudiantes/', estudiantes_view, name='estudiantes_view'),
 path('funcionario/crear_solicitud/profesor/', profesor_view, name='profesor_view'),
 path('funcionario/crear_solicitud/cotizacion/', cotizacion_view, name='cotizacion_view'),
-path('funcionario/crear_solicitud/', asignatura_view, name='crear_solicitud'),
-path('admin/', admin.site.urls),
+
+
+# UTILIDADES
+path('admin/load_users/', load_users, name='load_users'),
+path('admin/poblar/', poblar_bbdd, name='poblar_bbdd'),
+
+
+# ADMIN
+path('admin/', admin.site.urls, name='admin'),
 ]

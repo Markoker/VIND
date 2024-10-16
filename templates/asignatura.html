@@ -19,8 +19,8 @@
                         success: function(data){
                             $('#id_departamento').empty();
                             $('#id_departamento').append('<option value="">Seleccione una unidad académica</option>');
-                            $.each(data.unidades_academicas, function(key, value){
-                                $('#id_departamento').append('<option value="'+value+'">'+value+'</option>');
+                            $.each(data.unidades_academicas, function(index, data){
+                                $('#id_departamento').append('<option value="'+data[0]+'">'+data[1]+'</option>');
                             });
                         }
                     });
@@ -29,24 +29,21 @@
             $('#id_departamento, #id_semestre').change(function(){
                 var selectedUnidad = $('#id_departamento').val();
                 var selectedSemestre = $('#id_semestre').val();
-                var selectedCampus = $('#id_campus').val();
                 if (selectedUnidad && selectedSemestre){
                     console.log("Selected unidad:", selectedUnidad);
                     console.log("Selected semestre:", selectedSemestre);
-                    console.log("Selected campus:", selectedCampus);
                     $.ajax({
                         url: '{% url "get_asignaturas" %}',
                         data: {
                             'unidad': selectedUnidad,
                             'semestre': selectedSemestre,
-                            'campus': selectedCampus
                         },
                         success: function(data){
                             console.log("Asignaturas recibidas:", data.asignaturas);
                             $('#id_sigla').empty();  
                             $('#id_sigla').append('<option value="">Seleccione una asignatura</option>');
                             $.each(data.asignaturas, function(index, asignatura){
-                                $('#id_sigla').append('<option value="'+asignatura.sigla+'">'+asignatura.nombre+'</option>');
+                                $('#id_sigla').append('<option value="'+asignatura[0]+'">'+asignatura[1]+'</option>');
                             });
                         }
                     });
@@ -54,21 +51,12 @@
             });
             $('#id_sigla').change(function(){
                 var selectedAsignatura = $(this).val();
-                var selectedUnidad = $('#id_departamento').val();
-                var selectedSemestre = $('#id_semestre').val();
-                var selectedCampus = $('#id_campus').val();
-                if(selectedAsignatura && selectedUnidad && selectedSemestre){
+                if(selectedAsignatura){
                     console.log("Selected asignatura:", selectedAsignatura);
-                    console.log("Selected unidad:", selectedUnidad);
-                    console.log("Selected semestre:", selectedSemestre);
-                    console.log("Selected campus:", selectedCampus);
                     $.ajax({
                         url: '{% url "get_paralelos" %}',
                         data: {
                             'asignatura': selectedAsignatura,
-                            'unidad': selectedUnidad,
-                            'semestre': selectedSemestre,
-                            'campus': selectedCampus
                         },
                         success: function(data){
                             console.log("Paralelos recibidos:", data.paralelos);
@@ -76,9 +64,10 @@
                             $('#id_paralelo').append('<option value="">Seleccione un paralelo</option>');
                             
                             // Añadimos las nuevas opciones
-                            $.each(data.paralelos, function(key, value) {
+                            $.each(data.paralelos, function(index, value){ {
                                 $('#id_paralelo').append('<option value="'+value+'">'+value+'</option>');
-                        });
+                            }});
+                            
                     }
                 });
             }

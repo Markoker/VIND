@@ -6,20 +6,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Create your models here.
-class Solicitud(models.Model):
-    id_solicitud = models.AutoField(primary_key=True)
-    fecha = models.DateField()
-    estado = models.CharField(max_length=16)  # Rechazado, Pendiente, Revisado, Autorizado, Aprobado, Finalizado
-    descripcion = models.TextField()
-    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
-    sigla_asignatura = models.CharField(max_length=8)
-    paralelo = models.PositiveIntegerField()
-
-    def __str__(self):
-        return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
-
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, rut, password=None, **extra_fields):
         if not email:
@@ -71,8 +57,51 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.first_name}: {self.email} - {self.telefono}"
 
+class Funcionario(models.Model):
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    unidad_academica = models.ForeignKey('UnidadAcademica', on_delete=models.CASCADE)
 
-# Cotizacion necesita guardar archivos PDF
+    def __str__(self):
+        return f"{self.usuario} es funcionario en {self.unidad_academica}"
+
+class Ingeniero(models.Model):
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    emplezamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.usuario} es ingeniero en {self.emplezamiento}"
+
+class Subdirector(models.Model):
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    unidad_academica = models.ForeignKey('UnidadAcademica', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.usuario} es subdirector en {self.unidad_academica}"
+
+class Solicitud(models.Model):
+    id_solicitud = models.AutoField(primary_key=True)
+    fecha = models.DateField()
+    estado = models.CharField(max_length=16, default="Pendiente")  # Rechazado, Pendiente, Revisado, Autorizado, Aprobado, Finalizado
+    descripcion = models.TextField()
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
+
+    visita = models.ForeignKey('Visita', on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
+
+class Visita(models.Model):
+    id_visita = models.AutoField(primary_key=True)
+    nombre_empresa = models.CharField(max_length=64, default='NN')
+    fecha = models.DateField()
+    lugar = models.CharField(max_length=64)
+    profesor_encargado = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.fecha} - {self.lugar} - {self.solicitud} - {self.profesor_encargado}"
+
+
 class Cotizacion(models.Model):
     TIPO_CHOICES = [
         ('Solo traslado', 'Sólo traslado'),
@@ -116,31 +145,6 @@ class Reembolso(models.Model):
     def __str__(self):
         return f"Reembolso de ${self.monto} - {self.estado} - {self.solicitud} - {self.usuario}"
 
-
-class UnidadAcademica(models.Model):
-    id_unidad_academica = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=64)
-    presupuesto = models.IntegerField()
-    gasto = models.IntegerField()
-    emplazamiento = models.CharField(max_length=64)
-
-    def __str__(self):
-        return f"{self.nombre} - ${self.presupuesto} - ${self.gasto} - {self.emplazamiento}"
-
-
-class Visita(models.Model):
-    id_visita = models.AutoField(primary_key=True)
-    nombre_empresa = models.CharField(max_length=64, default='NN')
-    fecha = models.DateField()
-    semestre = models.CharField(max_length=5)
-    lugar = models.CharField(max_length=64)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True)
-    profesor_encargado = models.ForeignKey('Usuario', on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.fecha} - {self.lugar} - {self.solicitud} - {self.profesor_encargado}"
-
-
 class Estudiantes(models.Model):
     rut = models.CharField(max_length=16, primary_key=True)
     nombre = models.CharField(max_length=64)
@@ -149,14 +153,33 @@ class Estudiantes(models.Model):
     def __str__(self):
         return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
 
+class Emplazamiento(models.Model):
+    id_emplazamiento = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=64)
+    sigla = models.CharField(max_length=8)
+
+    def __str__(self):
+        return f"{self.nombre} [{self.sigla}]"
+
+class UnidadAcademica(models.Model):
+    id_unidad_academica = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=64)
+    presupuesto = models.IntegerField()
+    gasto = models.IntegerField()
+    emplazamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.nombre} - ${self.presupuesto} - ${self.gasto} - {self.emplazamiento}"
+
 class Asignatura(models.Model):
-    sigla = models.CharField(max_length=8, primary_key=True)
+    id_asignatura = models.AutoField(primary_key=True, unique=True)
+    sigla = models.CharField(max_length=8)
+    nombre = models.CharField(max_length=128)
     semestre = models.PositiveIntegerField()
-    departamento = models.CharField(max_length=64)
-    campus = models.CharField(max_length=64)
+    departamento = models.ForeignKey('UnidadAcademica', on_delete=models.CASCADE)
     paralelo = models.PositiveIntegerField()
 
     def __str__(self):
-        return f"{self.sigla} - {self.semestre} - {self.departamento} - {self.campus}"
+        return f"{self.sigla} - {self.semestre} - {self.departamento}"
 
 # son o 1 o 3 cotizaciones

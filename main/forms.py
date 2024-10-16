@@ -41,21 +41,6 @@ class CustomUserCreationForm(UserCreationForm):
             user.save()
         return user
 
-
-class SolicitudForm(forms.ModelForm):
-    class Meta:
-        model = Solicitud
-        fields = ['fecha', 'estado', 'descripcion', 'usuario', 'sigla_asignatura', 'paralelo']
-        widgets = {
-            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
-        }
-
-class UsuarioForm(forms.ModelForm):
-    class Meta:
-        model = Usuario
-        fields = ['rut', 'first_name', 'email', 'telefono']
-
-
 class CotizacionForm(forms.ModelForm):
     class Meta:
         model = Cotizacion
@@ -108,11 +93,11 @@ class VisitaForm(forms.ModelForm):
         ),
         input_formats=['%Y-%m-%d'],
     )
-     
+
     class Meta:
         model = Visita
         fields = ['nombre_empresa', 'fecha', 'lugar']
-    
+
     def clean_fecha(self):
         data = self.cleaned_data['fecha']
         if data < timezone.now().date():
@@ -123,7 +108,7 @@ class EstudiantesForm(forms.Form):
     cantidad = forms.IntegerField(min_value=1)
     # make optional file field
     listado = forms.FileField(required=False)
-    
+
 class ProfesorForm(forms.ModelForm):
     rut = forms.CharField(max_length=12, widget=forms.TextInput(attrs={'placeholder': 'XXXXXXXX-X'}))
 
@@ -131,9 +116,8 @@ class ProfesorForm(forms.ModelForm):
         model = Usuario
         fields = ['rut', 'first_name', 'email']
 
-class AsignaturaForm(forms.ModelForm):
+class AsignaturaForm(forms.Form):
     class Meta:
-        model = Asignatura
         fields = ['campus', 'departamento', 'semestre', 'sigla', 'paralelo']
     def __init__(self, *args, **kwargs):
         campus_opciones = kwargs.pop('campus_opciones', [])
@@ -143,14 +127,13 @@ class AsignaturaForm(forms.ModelForm):
         paralelos_opciones = kwargs.pop('paralelos_opciones', [])
 
         super().__init__(*args, **kwargs)
-
         self.fields['campus'] = forms.ChoiceField(
-            choices=[(c, c) for c in campus_opciones],
-            label="Seleccione el campus"
+            choices=[('', 'Seleccione un campus')] + [(c, c) for c in campus_opciones],
+            label="Seleccione un campus"
         )
 
         self.fields['departamento'] = forms.ChoiceField(
-            choices=[('', 'Seleccione una unidad académica')] + [(u['DEPARTAMENTO'], u['DEPARTAMENTO']) for u in unidades_opciones],
+            choices=[('', 'Seleccione una unidad académica')] + [(u[0], u[1]) for u in unidades_opciones],
             label="Seleccione la unidad académica"
         )
 
@@ -160,11 +143,11 @@ class AsignaturaForm(forms.ModelForm):
         )
 
         self.fields['sigla'] = forms.ChoiceField(
-            choices=[('', 'Seleccione una asignatura')] + [(a['SIGLA'], a['SIGLA']) for a in asignaturas_opciones],
+            choices=[('', 'Seleccione una asignatura')] + [(a[0], a[1]) for a in asignaturas_opciones],
             label="Seleccione la asignatura"
         )
 
         self.fields['paralelo'] = forms.ChoiceField(
-            choices=[('', 'Seleccione un paralelo')] + [(p['PARALELO'], p['PARALELO']) for p in paralelos_opciones],
+            choices=[('', 'Seleccione un paralelo')] + [(p, p) for p in paralelos_opciones],
             label="Seleccione el paralelo"
         )
