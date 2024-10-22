@@ -57,12 +57,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.first_name}: {self.email} - {self.telefono}"
 
+
 class Funcionario(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     unidad_academica = models.ForeignKey('UnidadAcademica', on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.usuario} es funcionario en {self.unidad_academica}"
+
 
 class Ingeniero(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
@@ -71,6 +73,15 @@ class Ingeniero(models.Model):
     def __str__(self):
         return f"{self.usuario} es ingeniero en {self.emplezamiento}"
 
+
+class Director(models.Model):
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+    emplezamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.usuario} es ingeniero en {self.emplezamiento}"
+
+
 class Subdirector(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     unidad_academica = models.ForeignKey('UnidadAcademica', on_delete=models.CASCADE)
@@ -78,10 +89,12 @@ class Subdirector(models.Model):
     def __str__(self):
         return f"{self.usuario} es subdirector en {self.unidad_academica}"
 
+
 class Solicitud(models.Model):
     id_solicitud = models.AutoField(primary_key=True)
     fecha = models.DateField()
-    estado = models.CharField(max_length=16, default="Pendiente")  # Rechazado, Pendiente, Revisado, Autorizado, Aprobado, Finalizado
+    estado = models.CharField(max_length=16,
+                              default="Pendiente")  # Rechazado, Pendiente, Revisado, Autorizado, Aprobado, Finalizado
     descripcion = models.TextField()
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
@@ -91,15 +104,18 @@ class Solicitud(models.Model):
     def __str__(self):
         return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
 
+
 class Visita(models.Model):
     id_visita = models.AutoField(primary_key=True)
     nombre_empresa = models.CharField(max_length=64, default='NN')
     fecha = models.DateField()
     lugar = models.CharField(max_length=64)
-    profesor_encargado = models.ForeignKey('Usuario', on_delete=models.CASCADE)
+
+    # IDEA: que tengan que poner en el excel si el visitante es encargado, y lo guardamos desde ahi.
+    # (?) ¿Puede haber más de un encargado?
 
     def __str__(self):
-        return f"{self.fecha} - {self.lugar} - {self.solicitud} - {self.profesor_encargado}"
+        return f"{self.fecha} - {self.lugar}"
 
 
 class Cotizacion(models.Model):
@@ -133,6 +149,7 @@ class Cotizacion(models.Model):
     def __str__(self):
         return f"Cotizacion {'Primaria' if (self.es_principal) else ''} de {self.tipo} por ${self.monto} - {self.solicitud}"
 
+
 class Reembolso(models.Model):
     id_reembolso = models.AutoField(primary_key=True)
     monto = models.IntegerField()
@@ -145,13 +162,17 @@ class Reembolso(models.Model):
     def __str__(self):
         return f"Reembolso de ${self.monto} - {self.estado} - {self.solicitud} - {self.usuario}"
 
-class Estudiantes(models.Model):
-    rut = models.CharField(max_length=16, primary_key=True)
-    nombre = models.CharField(max_length=64)
+
+class Visitante(models.Model):
     visita = models.ForeignKey('Visita', on_delete=models.CASCADE)
+    nombre = models.CharField(max_length=64)
+    rut = models.CharField(max_length=12)
+    correo = models.EmailField()
+    es_encargado = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Estudiante {self.nombre} ({self.rut}) - {self.visita}"
+        return f"El/la visitante {"encargado" if self.es_encargado else ""} {self.nombre} [{self.rut}] participa en {self.visita}"
+
 
 class Emplazamiento(models.Model):
     id_emplazamiento = models.AutoField(primary_key=True)
@@ -160,6 +181,7 @@ class Emplazamiento(models.Model):
 
     def __str__(self):
         return f"{self.nombre} [{self.sigla}]"
+
 
 class UnidadAcademica(models.Model):
     id_unidad_academica = models.AutoField(primary_key=True)
@@ -170,6 +192,7 @@ class UnidadAcademica(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - ${self.presupuesto} - ${self.gasto} - {self.emplazamiento}"
+
 
 class Asignatura(models.Model):
     id_asignatura = models.AutoField(primary_key=True, unique=True)

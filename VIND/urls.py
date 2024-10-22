@@ -22,22 +22,39 @@ urlpatterns = [
 path('', landing_view, name='landing'),
 path('login/', login_view, name='login'),
 path('home/', home_view, name='home'),
+
+# FUNCIONARIO
 path('funcionario/', funcionario_view, name='funcionario'),
+
+# ENVIAR SOLICITUD (URLS EN ORDEN)
 path('funcionario/crear_solicitud/', asignatura_view, name='crear_solicitud'),
+path('funcionario/crear_solicitud/visita/', visita_view, name='visita_view'),
+path('funcionario/crear_solicitud/profesor/', profesor_view, name='profesor_view'),
+path('funcionario/crear_solicitud/estudiantes/', estudiantes_view, name='estudiantes_view'),
+path('funcionario/crear_solicitud/cotizacion/', cotizacion_view, name='cotizacion_view'),
+
+
+
 path('funcionario/crear_solicitud/get_unidades', get_unidades, name='get_unidades'),
 path('funcionario/crear_solicitud/get_paralelos', get_paralelos, name='get_paralelos'),
 path('funcionario/crear_solicitud/get_asignaturas', get_asignaturas, name='get_asignaturas'),
-path('funcionario/crear_solicitud/visita/', visita_view, name='visita_view'),
-path('funcionario/crear_solicitud/estudiantes/', estudiantes_view, name='estudiantes_view'),
-path('funcionario/crear_solicitud/profesor/', profesor_view, name='profesor_view'),
-path('funcionario/crear_solicitud/cotizacion/', cotizacion_view, name='cotizacion_view'),
 
+
+
+# INGENIERO
+
+# DIRECTOR
+
+# SUBDIRECTOR
 
 # UTILIDADES
 path('admin/load_users/', load_users, name='load_users'),
 path('admin/poblar/', poblar_bbdd, name='poblar_bbdd'),
+path('admin/poblar/usuarios', poblar_bbdd_u, name='poblar_bbdd_u'),
+path('admin/poblar/solicitudes', poblar_bbdd_s, name='poblar_bbdd_s'),
 
 
 # ADMIN
 path('admin/', admin.site.urls, name='admin'),
+
 ]

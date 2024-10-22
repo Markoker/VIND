@@ -41,45 +41,53 @@ class CustomUserCreationForm(UserCreationForm):
             user.save()
         return user
 
-class CotizacionForm(forms.ModelForm):
+
+class CotizacionForm(forms.Form):
+    tipo = forms.ChoiceField(choices=[('Solo traslado', 'Solo traslado'),
+                                      ('Solo colacion', 'Solo colacion'),
+                                      ('Traslado y colacion', 'Traslado y colacion')],
+                             label='Tipo de cotización')
+    nombre_proveedor = forms.CharField(max_length=64, label='Nombre del proveedor')
+    rut_proveedor = forms.CharField(max_length=12, label='RUT del proveedor')
+    correo_proveedor = forms.EmailField(label='Correo del proveedor')
+    monto = forms.IntegerField(min_value=0, label='Monto total')
+
+    cotizacion_1 = forms.FileField(label='Cotización 1')
+    cotizacion_2 = forms.FileField(label='Cotización 2', required=False)
+    cotizacion_3 = forms.FileField(label='Cotización 3', required=False)
+
+    correo_presupuesto = forms.EmailField(label='Correo de presupuesto', required=False)
+    tipo_subvencion = forms.ChoiceField(choices=[('reembolso', 'Reembolso'), ('presupuesto', 'Previa presupuestación')],
+                                        label='Tipo de subvención', required=False)
+    monto_individual = forms.IntegerField(min_value=0, label='Monto individual', required=False)
+
+
     class Meta:
-        model = Cotizacion
         fields = ['tipo', 'nombre_proveedor', 'rut_proveedor', 'correo_proveedor',
-                   'monto', 'cotizacion_1', 'cotizacion_2', 'cotizacion_3', 'correo_presupuesto',
-                   'tipo_subvencion', 'monto_individual']
-    def __init__(self, *args, **kwargs):
-        super(CotizacionForm, self).__init__(*args, **kwargs)
-        self.fields['nombre_proveedor'].required = False
-        self.fields['rut_proveedor'].required = False
-        self.fields['correo_proveedor'].required = False
-        self.fields['monto'].required = False
-        self.fields['cotizacion_1'].required = False
-        self.fields['cotizacion_2'].required = False
-        self.fields['cotizacion_3'].required = False
-        self.fields['correo_presupuesto'].required = False
-        self.fields['tipo_subvencion'].required = False
-        self.fields['monto_individual'].required = False
+                  'monto', 'cotizacion_1', 'cotizacion_2', 'cotizacion_3', 'correo_presupuesto',
+                  'tipo_subvencion', 'monto_individual']
 
     def clean(self):
         cleaned_data = super().clean()
         tipo = cleaned_data.get('tipo')
         monto = cleaned_data.get('monto')
         tipo_subvencion = cleaned_data.get('tipo_subvencion')
-        monto_individual= cleaned_data.get('monto_individual')
+        monto_individual = cleaned_data.get('monto_individual')
         if not cleaned_data.get('cotizacion_1'):
             self.add_error('cotizacion_1', 'Adjunta al menos una cotización.')
         if tipo == 'Solo traslado' or tipo == 'Traslado y colacion':
             if monto and monto > 1000000:
-                if not(cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3')):
-                    if not(cleaned_data.get('correo_presupuesto')):
+                if not (cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get(
+                        'cotizacion_3')):
+                    if not (cleaned_data.get('correo_presupuesto')):
                         self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
         if tipo == 'Solo colacion' or tipo == 'Traslado y colacion':
-            total = monto_individual * 2 if monto_individual else 0 #temporal
+            total = monto_individual * 2 if monto_individual else 0  # temporal
             if total > 3 * 29360:
-                if not(cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3')):
-                    if not(cleaned_data.get('correo_presupuesto')):
+                if not (cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get(
+                        'cotizacion_3')):
+                    if not (cleaned_data.get('correo_presupuesto')):
                         self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
-
 
 
 class VisitaForm(forms.ModelForm):
@@ -104,21 +112,28 @@ class VisitaForm(forms.ModelForm):
             raise ValidationError('La fecha no puede ser anterior al día actual.')
         return data
 
+
 class EstudiantesForm(forms.Form):
     cantidad = forms.IntegerField(min_value=1)
-    # make optional file field
     listado = forms.FileField(required=False)
 
-class ProfesorForm(forms.ModelForm):
+    class Meta:
+        fields = ['cantidad', 'listado']
+
+
+class ProfesorForm(forms.Form):
     rut = forms.CharField(max_length=12, widget=forms.TextInput(attrs={'placeholder': 'XXXXXXXX-X'}))
+    nombre = forms.CharField(max_length=64)
+    email = forms.EmailField()
 
     class Meta:
-        model = Usuario
-        fields = ['rut', 'first_name', 'email']
+        fields = ['rut', 'nombre', 'email']
+
 
 class AsignaturaForm(forms.Form):
     class Meta:
-        fields = ['campus', 'departamento', 'semestre', 'sigla', 'paralelo']
+        fields = ['campus', 'departamento', 'semestre', 'asignatura', 'paralelo']
+
     def __init__(self, *args, **kwargs):
         campus_opciones = kwargs.pop('campus_opciones', [])
         unidades_opciones = kwargs.pop('unidades_opciones', [])
@@ -142,7 +157,7 @@ class AsignaturaForm(forms.Form):
             label="Seleccione el semestre"
         )
 
-        self.fields['sigla'] = forms.ChoiceField(
+        self.fields['asignatura'] = forms.ChoiceField(
             choices=[('', 'Seleccione una asignatura')] + [(a[0], a[1]) for a in asignaturas_opciones],
             label="Seleccione la asignatura"
         )

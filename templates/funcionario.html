@@ -1,1 +1,10 @@
 <a href="{% url 'crear_solicitud' %}">Crear solicitud</a>
+
+<h2>Mis solicitudes</h2>
+{% for solicitud in solicitudes %}
+    <div>
+        <p>{{ solicitud.descripcion }}</p>
+        <p>{{ solicitud.fecha }}</p>
+        <p>{{ solicitud.estado }}</p>
+    </div>
+{% endfor %}

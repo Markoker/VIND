@@ -5,7 +5,9 @@ from .models import *
 from .utils import cargar
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
+
 from random import randint
+import pandas as pd
 
 
 def check_user_role(role):
@@ -70,7 +72,13 @@ def home_view(request):
 
 
 def funcionario_view(request):
-    return render(request, 'funcionario.html')
+    solicitudes = Solicitud.objects.filter(usuario=request.user)
+
+    data = {
+        'solicitudes': solicitudes
+    }
+
+    return render(request, 'funcionario.html', data)
 
 
 # region FORMULARIO SOLICITUD
@@ -92,7 +100,7 @@ def asignatura_view(request):
         if form.is_valid():
             data = form.cleaned_data
 
-            request.session['asignatura_data'] = data['sigla']
+            request.session['asignatura_data'] = data['asignatura']
 
             return redirect('visita_view')
     else:
@@ -105,6 +113,7 @@ def asignatura_view(request):
 
 
 def visita_view(request):
+    print(request.session['asignatura_data'])
     if request.method == 'POST':
         form = VisitaForm(request.POST)
         if form.is_valid():
@@ -118,26 +127,14 @@ def visita_view(request):
 
 
 def profesor_view(request):
+    print(request.session['asignatura_data'])
+    print(request.session['visita_data'])
     if request.method == 'POST':
         form = ProfesorForm(request.POST)
         if form.is_valid():
-            '''
-            visita_data = request.session.get('visita_data')
-            # Parse the date string back to a date object
-            visita_data['fecha'] = parse_date(visita_data['fecha'])
-            profesor = form.save()
-            messages.success(request, 'Los datos han sido enviados correctamente.')
-            visita = Visita(
-                nombre_empresa=visita_data.get('nombre_empresa'),
-                fecha=visita_data.get('fecha'),
-                lugar=visita_data.get('lugar'),
-                profesor_encargado=profesor
-            )
-            visita.save()
-            request.session.flush()
-            '''
-            form.save()
-            return redirect('cotizacion_view')
+            request.session['profesor_data'] = form.cleaned_data
+
+            return redirect('estudiantes_view')
     else:
         form = ProfesorForm()
     return render(request, 'profesor.html', {'form': form})
@@ -146,14 +143,49 @@ def profesor_view(request):
 # endregion
 
 def estudiantes_view(request):
+    print(request.session['asignatura_data'])
+    print(request.session['visita_data'])
+    print(request.session['profesor_data'])
+
     if request.method == 'POST':
-        form = EstudiantesForm(request.POST)
+        form = EstudiantesForm(request.POST, request.FILES)
         if form.is_valid():
-            request.session['estudiantes_data'] = form.cleaned_data
-            return redirect('profesor_view')
+            data = form.cleaned_data
+
+            archivo = data['listado']
+            extension = archivo.name.split('.')[-1]
+
+            if extension == 'csv':
+                df = pd.read_csv(archivo)
+            elif extension == 'xlsx':
+                df = pd.read_excel(archivo)
+            else:
+                return HttpResponse("Archivo no soportado")
+
+            datos = df.to_dict('records')
+
+            request.session['estudiantes_data'] = datos
+
+            return redirect('cotizacion_view')
     else:
         form = EstudiantesForm()
     return render(request, 'estudiantes.html', {'form': form})
+
+
+def cotizacion_view(request):
+    print(request.session['asignatura_data'])
+    print(request.session['visita_data'])
+    print(request.session['profesor_data'])
+    print(request.session['estudiantes_data'])
+    if request.method == 'POST':
+        form = CotizacionForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return HttpResponse("Cotización guardada")
+    else:
+        form = CotizacionForm()
+
+    return render(request, 'cotizacion.html', {'form': form})
 
 
 def get_unidades(request):
@@ -190,19 +222,6 @@ def get_paralelos(request):
 
     # Retornamos los paralelos en formato JSON
     return JsonResponse({'paralelos': paralelos})
-
-
-@check_user_role('funcionario')
-def cotizacion_view(request):
-    if request.method == 'POST':
-        form = CotizacionForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return HttpResponse("Cotización guardada")
-    else:
-        form = CotizacionForm()
-
-    return render(request, 'cotizacion.html', {'form': form})
 
 
 def visita(request):
@@ -305,4 +324,51 @@ def poblar_bbdd(request):
 
     return redirect('landing')
 
+
+def poblar_bbdd_u(request):
+    nombres = ['Juan', 'Pedro', 'Diego', 'Marco', 'Javier', 'Felipe', 'Cristian', 'Rodrigo', 'Andres', 'Carlos']
+    apellidos = ['Perez', 'Gonzalez', 'Diaz', 'Gomez', 'Torres', 'Vargas', 'Silva', 'Molina', 'Soto', 'Lopez']
+
+    for i in range(30):
+        nombre = nombres[randint(0, len(nombres) - 1)]
+        apellido = apellidos[randint(0, len(apellidos) - 1)]
+        rut = str(randint(10000000, 25000000)) + '-' + str(randint(0, 9))
+        email = f"{nombre}.{apellido}@usm.cl"
+        telefono = str(randint(10000000, 99999999))
+
+        c = 1
+        while Usuario.objects.filter(email=email).exists():
+            email = f"{nombre}.{apellido}{c}@usm.cl"
+            c += 1
+
+        u = Usuario(email=email, rut=rut, telefono=telefono, first_name=nombre, last_name=apellido)
+        u.set_password('1234')
+        u.save()
+    return redirect('landing')
+
+
+def poblar_bbdd_s(request):
+    # Random date between today and 2025
+    from datetime import date, timedelta
+    from random import randrange
+
+    for i in range(300):
+        # Solicitud
+        # Random date between today and 2025
+        start_date = date.today()
+        end_date = date(2025, 1, 1)
+        delta = end_date - start_date
+        random_days = randrange(delta.days)
+        fecha = start_date + timedelta(days=random_days)
+
+        estado = 'Pendiente'
+
+        # Random asignatura
+        asignatura = Asignatura.objects.all().order_by('?').first()
+        usuario = Usuario.objects.all().order_by('?').first()
+
+        s = Solicitud(fecha=fecha, estado=estado, asignatura=asignatura, usuario=usuario)
+        s.save()
+
+    return redirect('landing')
 # endregion
