@@ -99,7 +99,8 @@ class Solicitud(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
 
-    visita = models.ForeignKey('Visita', on_delete=models.CASCADE, null=True)
+    visita = models.ForeignKey('Visita', on_delete=models.CASCADE)
+    cotizacion = models.ForeignKey('Cotizacion', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
@@ -111,9 +112,6 @@ class Visita(models.Model):
     fecha = models.DateField()
     lugar = models.CharField(max_length=64)
 
-    # IDEA: que tengan que poner en el excel si el visitante es encargado, y lo guardamos desde ahi.
-    # (?) ¿Puede haber más de un encargado?
-
     def __str__(self):
         return f"{self.fecha} - {self.lugar}"
 
@@ -124,30 +122,40 @@ class Cotizacion(models.Model):
         ('Solo colacion', 'Sólo colación'),
         ('Traslado y colacion', 'Traslado y colaciones'),
     ]
-    SUBVENCION_CHOICES = [
-        ('reembolso', 'Reembolso'),
-        ('presupuesto', 'Previa presupuestación')
-    ]
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
 
+    id_cotizacion = models.AutoField(primary_key=True)
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
+    estado = models.CharField(max_length=16, default='Pendiente')
+
+
+class Traslado(models.Model):
     nombre_proveedor = models.CharField(max_length=255, blank=True, null=True)
     rut_proveedor = models.CharField(max_length=20, blank=True, null=True)
     correo_proveedor = models.EmailField(blank=True, null=True)
-
-    id_cotizacion = models.AutoField(primary_key=True)
     monto = models.PositiveIntegerField()
     cotizacion_1 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
     cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
     cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
 
-    tipo_subvencion = models.CharField(max_length=20, choices=SUBVENCION_CHOICES, blank=True, null=True)
-    monto_individual = models.PositiveIntegerField(blank=True, null=True)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, null=True, blank=True)
-    correo_presupuesto = models.EmailField(null=True, blank=True)
-    estado = models.CharField(max_length=16, default='Pendiente')
 
-    def __str__(self):
-        return f"Cotizacion {'Primaria' if (self.es_principal) else ''} de {self.tipo} por ${self.monto} - {self.solicitud}"
+class Colacion(models.Model):
+    SUBVENCION_CHOICES = [
+        ('reembolso', 'Reembolso'),
+        ('presupuesto', 'Previa presupuestación')
+    ]
+
+    tipo_subvencion = models.CharField(max_length=20, choices=SUBVENCION_CHOICES, blank=True, null=True)
+
+    nombre_proveedor = models.CharField(max_length=255, blank=True, null=True)
+    rut_proveedor = models.CharField(max_length=20, blank=True, null=True)
+    correo_proveedor = models.EmailField(blank=True, null=True)
+    cotizacion_1 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+
+    monto_individual = models.PositiveIntegerField(blank=True, null=True)
+
+    reembolso = models.ForeignKey('Reembolso', on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Reembolso(models.Model):

@@ -164,7 +164,12 @@ def estudiantes_view(request):
 
             datos = df.to_dict('records')
 
-            request.session['estudiantes_data'] = datos
+            estudiantes_data = {
+                'datos': datos,
+                'cantidad': df.shape[0]
+            }
+
+            request.session['estudiantes_data'] = estudiantes_data
 
             return redirect('cotizacion_view')
     else:
@@ -180,7 +185,6 @@ def cotizacion_view(request):
     if request.method == 'POST':
         form = CotizacionForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
             return HttpResponse("Cotización guardada")
     else:
         form = CotizacionForm()
