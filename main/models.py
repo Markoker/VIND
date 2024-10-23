@@ -136,6 +136,8 @@ class Cotizacion(models.Model):
     tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
     estado = models.CharField(max_length=16, default='Pendiente')
 
+    monto = models.PositiveIntegerField()
+
     traslado = models.ForeignKey('Traslado', on_delete=models.CASCADE, null=True, blank=True)
     colacion = models.ForeignKey('Colacion', on_delete=models.CASCADE, null=True, blank=True)
 
@@ -165,7 +167,7 @@ class Colacion(models.Model):
     cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
     cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
 
-    monto_individual = models.PositiveIntegerField(blank=True, null=True)
+    monto = models.PositiveIntegerField(blank=True, null=True)
 
     reembolso = models.ForeignKey('Reembolso', on_delete=models.CASCADE, null=True, blank=True)
 
@@ -175,9 +177,7 @@ class Reembolso(models.Model):
     monto = models.IntegerField()
     fecha_pago = models.DateField()
     estado = models.CharField(max_length=16)
-    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE)
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
-    fecha_visita = models.DateField()
 
     def __str__(self):
         return f"Reembolso de ${self.monto} - {self.estado} - {self.solicitud} - {self.usuario}"
@@ -187,7 +187,7 @@ class Visitante(models.Model):
     visita = models.ForeignKey('Visita', on_delete=models.CASCADE)
     nombre = models.CharField(max_length=64)
     rut = models.CharField(max_length=12)
-    correo = models.EmailField()
+    email = models.EmailField()
 
     def __str__(self):
         return f"El/la visitante {self.nombre} [{self.rut}] participa en {self.visita}"

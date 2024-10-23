@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from .forms import *
 from .models import *
-from .utils import cargar
+from .utils import *
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
 
@@ -329,10 +329,11 @@ def poblar_bbdd(request):
     return redirect('landing')
 
 
-def poblar_bbdd_u(request):
-    nombres = ['Juan', 'Pedro', 'Diego', 'Marco', 'Javier', 'Felipe', 'Cristian', 'Rodrigo', 'Andres', 'Carlos']
-    apellidos = ['Perez', 'Gonzalez', 'Diaz', 'Gomez', 'Torres', 'Vargas', 'Silva', 'Molina', 'Soto', 'Lopez']
+nombres = ['Juan', 'Pedro', 'Diego', 'Marco', 'Javier', 'Felipe', 'Cristian', 'Rodrigo', 'Andres', 'Carlos']
+apellidos = ['Perez', 'Gonzalez', 'Diaz', 'Gomez', 'Torres', 'Vargas', 'Silva', 'Molina', 'Soto', 'Lopez']
 
+
+def poblar_bbdd_u(request):
     for i in range(30):
         nombre = nombres[randint(0, len(nombres) - 1)]
         apellido = apellidos[randint(0, len(apellidos) - 1)]
@@ -356,7 +357,119 @@ def poblar_bbdd_s(request):
     from datetime import date, timedelta
     from random import randrange
 
-    for i in range(300):
+    # Delete all data
+    Visita.objects.all().delete()
+    Solicitud.objects.all().delete()
+    Profesor.objects.all().delete()
+    Visitante.objects.all().delete()
+    Cotizacion.objects.all().delete()
+    Traslado.objects.all().delete()
+    Colacion.objects.all().delete()
+
+    for i in range(30):
+        # Visita
+        nombre_empresa = generar_empresa()['nombre']
+        fecha_visita = date.today() + timedelta(days=randrange(120))
+        lugar = generar_lugar()
+
+        v = Visita(nombre_empresa=nombre_empresa, fecha=fecha_visita, lugar=lugar)
+        v.save()
+
+        # Profesor
+        nombre = nombres[randint(0, len(nombres) - 1)]
+        apellido = apellidos[randint(0, len(apellidos) - 1)]
+        rut = str(randint(10000000, 25000000)) + '-' + str(randint(0, 9))
+        email = f"{nombre}.{apellido}@usm.cl"
+
+        p = Profesor(rut=rut, nombre=f"{nombre} {apellido}", email=email, visita=v)
+
+        # Visitantes
+        cantidad = randint(15, 60)
+        for j in range(cantidad):
+            nombre = nombres[randint(0, len(nombres) - 1)]
+            apellido = apellidos[randint(0, len(apellidos) - 1)]
+            rut = str(randint(10000000, 25000000)) + '-' + str(randint(0, 9))
+            email = f"{nombre}.{apellido}@usm.cl"
+
+            visitante = Visitante(rut=rut, nombre=f"{nombre} {apellido}", email=email, visita=v)
+            visitante.save()
+
+
+        # Cotización
+        TIPO_CHOICES = [
+            ('Solo traslado', 'Sólo traslado'),
+            ('Solo colacion', 'Sólo colación'),
+            ('Traslado y colacion', 'Traslado y colaciones'),
+        ]
+
+        tipo = random.choice(TIPO_CHOICES)[0]
+        estado = 'Pendiente'
+
+        empresa_traslado = generar_empresa()
+        monto_traslado = 0
+
+        t = None
+        c = None
+
+        if tipo == 'Solo traslado' or tipo == 'Traslado y colacion':
+            monto_traslado = randint(10000, 10000000)
+
+            t = Traslado(nombre_proveedor=empresa_traslado['nombre'],
+                         rut_proveedor=empresa_traslado['rut'],
+                         correo_proveedor=empresa_traslado['correo'],
+                         monto=monto_traslado)
+
+            if monto_traslado > 1000000:
+                with open('/home/marcor/PycharmProjects/VIND/main/test.pdf', 'rb') as f:
+                    t.cotizacion_1.save('test.pdf', f)
+                    t.cotizacion_2.save('test.pdf', f)
+                    t.cotizacion_3.save('test.pdf', f)
+            else:
+                with open('/home/marcor/PycharmProjects/VIND/main/test.pdf', 'rb') as f:
+                    t.cotizacion_1.save('test.pdf', f)
+
+            t.save()
+
+        monto_colacion = 0
+        if tipo == 'Solo colacion' or tipo == 'Traslado y colacion':
+            SUBVENCION_CHOICES = [
+                ('reembolso', 'Reembolso'),
+                ('presupuesto', 'Previa presupuestación')
+            ]
+
+            tipo_subvencion = random.choice(SUBVENCION_CHOICES)[0]
+
+            monto_colacion = randint(20000, 500000)
+
+            if tipo_subvencion == 'reembolso':
+                r = Reembolso(monto=monto_colacion,
+                              fecha_pago=fecha_visita + timedelta(days=randrange(30)),
+                              estado="Pendiente",
+                              # Random user
+                              usuario=Usuario.objects.all().order_by('?').first())
+                r.save()
+
+                c = Colacion(tipo_subvencion=tipo_subvencion,
+                             monto=monto_colacion,
+                             reembolso=r)
+                c.save()
+            else:
+                empresa_colacion = generar_empresa()
+                c = Colacion(tipo_subvencion=tipo_subvencion,
+                             monto=monto_colacion,
+                             nombre_proveedor=empresa_colacion['nombre'],
+                             rut_proveedor=empresa_colacion['rut'],
+                             correo_proveedor=empresa_colacion['correo'])
+
+                with open('/home/marcor/PycharmProjects/VIND/main/test.pdf', 'rb') as f:
+                    c.cotizacion_1.save('test.pdf', f)
+
+                c.save()
+
+        cotizacion = Cotizacion(tipo=tipo, estado=estado, traslado=t, colacion=c, monto=monto_traslado + monto_colacion)
+        cotizacion.save()
+
+
         # Solicitud
         # Random date between today and 2025
         start_date = date.today()
@@ -369,9 +482,14 @@ def poblar_bbdd_s(request):
 
         # Random asignatura
         asignatura = Asignatura.objects.all().order_by('?').first()
-        usuario = Usuario.objects.all().order_by('?').first()
+        usuario = Usuario.objects.filter(email="marco.repetto@usm.cl").first()
 
-        s = Solicitud(fecha=fecha, estado=estado, asignatura=asignatura, usuario=usuario)
+        s = Solicitud(fecha=fecha,
+                      estado=estado,
+                      asignatura=asignatura,
+                      usuario=usuario,
+                      visita=v,
+                      cotizacion=cotizacion)
         s.save()
 
     return redirect('landing')
