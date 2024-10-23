@@ -116,6 +116,15 @@ class Visita(models.Model):
         return f"{self.fecha} - {self.lugar}"
 
 
+class Profesor(models.Model):
+    visita = models.ForeignKey('Visita', on_delete=models.CASCADE)
+    rut = models.CharField(max_length=12)
+    nombre = models.CharField(max_length=64)
+    email = models.EmailField()
+
+    def __str__(self):
+        return f"{self.nombre} - {self.rut} - {self.email}"
+
 class Cotizacion(models.Model):
     TIPO_CHOICES = [
         ('Solo traslado', 'Sólo traslado'),
@@ -126,6 +135,9 @@ class Cotizacion(models.Model):
     id_cotizacion = models.AutoField(primary_key=True)
     tipo = models.CharField(max_length=50, choices=TIPO_CHOICES)
     estado = models.CharField(max_length=16, default='Pendiente')
+
+    traslado = models.ForeignKey('Traslado', on_delete=models.CASCADE, null=True, blank=True)
+    colacion = models.ForeignKey('Colacion', on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Traslado(models.Model):
@@ -176,10 +188,9 @@ class Visitante(models.Model):
     nombre = models.CharField(max_length=64)
     rut = models.CharField(max_length=12)
     correo = models.EmailField()
-    es_encargado = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"El/la visitante {"encargado" if self.es_encargado else ""} {self.nombre} [{self.rut}] participa en {self.visita}"
+        return f"El/la visitante {self.nombre} [{self.rut}] participa en {self.visita}"
 
 
 class Emplazamiento(models.Model):
