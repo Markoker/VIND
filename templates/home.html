@@ -1,12 +1,28 @@
-<h2>Hola</h2>
 
-{% if user.is_authenticated %}
-    <p>Usuario autenticado {{ user.email }}</p>
-{% else %}
-    <p>Usuario no autenticado</p>
-{% endif %}
+<h2>Funcionario/a en:</h2>
+{% for unidad_academica in funcionario_en %}
+    <a href="{% url 'funcionario' unidad_academica.id_unidad_academica %}">{{ unidad_academica.nombre }}</a>
+{% empty %}
+    <p>No trabaja en ninguna unidad académica como funcionario/a</p>
+{% endfor %}
 
-<a href="{% url 'funcionario' %}">Funcionario</a>
-<p>Ingeniero</p>
-<p>Subdirector</p>
-<p>Director</p>
+<h2>Ingeniero/a en:</h2>
+{% for emplazamiento in ingeniero_en %}
+    <a href="{% url 'ingeniero' emplazamiento.id_emplazamiento %}">{{ emplazamiento.nombre }}</a>
+{% empty %}
+    <p>No trabaja en ningún emplazamiento como ingeniero/a</p>
+{% endfor %}
+
+<h2>Subdirector/a en:</h2>
+{% for unidad_academica in subdirector_en %}
+    <p>{{ unidad_academica.nombre }}</p>
+{% empty %}
+    <p>No trabaja en ninguna unidad_academica como subdirector/a</p>
+{% endfor %}
+
+<h2>Director/a en:</h2>
+{% for emplazamiento in director_en %}
+    <p>{{ emplazamiento.nombre }}</p>
+{% empty %}
+    <p>No trabaja en ningún emplazamiento como director/a</p>
+{% endfor %}

@@ -1,6 +1,5 @@
 {% load tags %}
 
-<a href="{% url 'crear_solicitud' %}">Crear solicitud</a>
 <a href="{% url 'home' %}">Volver</a>
 
 <form method="get">
@@ -64,7 +63,9 @@
 <div class="solicitudes">
 {% for solicitud in solicitudes %}
     <div>
+        <p>Enviado por: {{ solicitud.usuario.email }}</p>
         <p>Lugar: {{ solicitud.visita.lugar }}</p>
+        <p>Asignatura: {{ solicitud.asignatura.sigla }} - {{ solicitud.asignatura.nombre }}</p>
         <p>Tipo: {{ solicitud.cotizacion.tipo }}</p>
         <p>Monto: ${{ solicitud.cotizacion.monto|separator }} </p>
         <p>Fecha envio: {{ solicitud.fecha|date:"SHORT_DATE_FORMAT" }}</p>

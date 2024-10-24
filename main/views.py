@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Max
 from django.shortcuts import render, redirect
 from .forms import *
 from .models import *
@@ -14,16 +15,17 @@ def check_user_role(role):
     def decorator(view_func):
         def wrapper(request, *args, **kwargs):
             if request.user.is_authenticated:
-                if role == 'funcionario' and request.user.is_funcionario:
-                    return view_func(request, *args, **kwargs)
-                elif role == 'ingeniero' and request.user.is_ingeniero:
-                    return view_func(request, *args, **kwargs)
-                elif role == 'subdirector' and request.user.is_subdirector:
-                    return view_func(request, *args, **kwargs)
-                elif role == 'director' and request.user.is_director:
-                    return view_func(request, *args, **kwargs)
-                else:
-                    return HttpResponse("No tienes permisos para acceder a esta vista")
+                if role == 'funcionario':
+                    unidad = kwargs.get('unidad', None)
+                    if Funcionario.objects.filter(usuario=request.user,
+                                                  unidad_academica__id_unidad_academica=unidad).exists():
+                        return view_func(request, *args, **kwargs)
+                elif role == 'ingeniero':
+                    emplazamiento = kwargs.get('emplazamiento', None)
+                    if Ingeniero.objects.filter(usuario=request.user,
+                                                emplazamiento__id_emplazamiento=emplazamiento).exists():
+                        return view_func(request, *args, **kwargs)
+                return HttpResponse("No tienes permisos para acceder a esta vista")
             else:
                 return redirect('login')
 
@@ -54,35 +56,123 @@ def login_view(request):
     return render(request, 'login.html', {'form': login_form})
 
 
+def logout(request):
+    logout(request)
+    return redirect('landing')
+
+
 @login_required
 def home_view(request):
-    print(request.user.is_funcionario)
-    print(request.user.is_ingeniero)
-    print(request.user.is_subdirector)
-    print(request.user.is_director)
+    data = {}
 
-    roles = {
-        'is_funcionario': request.user.is_funcionario,
-        'is_ingeniero': request.user.is_ingeniero,
-        'is_subdirector': request.user.is_subdirector,
-        'is_director': request.user.is_director,
-    }
+    # Get all the UnidadAcademica objects that the user is associated with
+    funcionario_en = (Funcionario.objects
+                      .filter(usuario=request.user)
+                      .values_list('unidad_academica', flat=True)
+                      .distinct())
+    ingeniero_en = (Ingeniero.objects
+                    .filter(usuario=request.user)
+                    .values_list('emplazamiento', flat=True)
+                    .distinct())
+    subdirector_en = (Subdirector.objects
+                      .filter(usuario=request.user)
+                      .values_list('unidad_academica', flat=True)
+                      .distinct())
+    director_en = (Director.objects
+                   .filter(usuario=request.user)
+                   .values_list('emplazamiento', flat=True)
+                   .distinct())
 
-    return render(request, 'home.html', {'roles': roles})
+    funcionario_en = (UnidadAcademica.objects
+                      .filter(id_unidad_academica__in=funcionario_en))
+    ingeniero_en = (Emplazamiento.objects
+                    .filter(id_emplazamiento__in=ingeniero_en))
+    subdirector_en = (UnidadAcademica.objects
+                      .filter(id_unidad_academica__in=subdirector_en))
+    director_en = (Emplazamiento.objects
+                   .filter(id_emplazamiento__in=director_en))
+
+    data['funcionario_en'] = funcionario_en
+    data['ingeniero_en'] = ingeniero_en
+    data['subdirector_en'] = subdirector_en
+    data['director_en'] = director_en
+
+    return render(request, 'home.html', data)
 
 
-def funcionario_view(request):
-    solicitudes = Solicitud.objects.filter(usuario=request.user)
-
+@check_user_role('funcionario')
+def funcionario_view(request, unidad):
     data = {
-        'solicitudes': solicitudes
+        "unidad": unidad
     }
+
+    if request.method == 'GET':
+        solicitudes = Solicitud.objects.filter(usuario=request.user,
+                                               asignatura__departamento__id_unidad_academica=unidad)
+
+        # region FILTROS
+        estado = request.GET.get('estado')
+        if estado:
+            solicitudes = solicitudes.filter(estado=estado)
+        else:
+            estado = ""
+
+        tipo = request.GET.get('tipo')
+        if tipo:
+            solicitudes = solicitudes.filter(cotizacion__tipo=tipo)
+        else:
+            tipo = ""
+
+        rango_fecha = request.GET.get('rango_fecha')
+        fecha = ""
+        if rango_fecha:
+            fecha = request.GET.get('fecha')
+
+            if rango_fecha == 'antes':
+                solicitudes = solicitudes.filter(fecha__lte=fecha)
+            elif rango_fecha == 'despues':
+                solicitudes = solicitudes.filter(fecha__gte=fecha)
+        else:
+            rango_fecha = ""
+
+        monto_min = request.GET.get('monto_min')
+        monto_max = request.GET.get('monto_max')
+        if monto_min and monto_max:
+            solicitudes = solicitudes.filter(cotizacion__monto__gte=monto_min, cotizacion__monto__lte=monto_max)
+        else:
+            monto_min = 0
+            monto_max = 10000000
+
+        data["filtros"] = {
+            'estado': estado,
+            'tipo': tipo,
+            'rango_fecha': rango_fecha,
+            'fecha': fecha,
+            'monto_min': monto_min,
+            'monto_max': monto_max
+        }
+        # endregion
+
+        # region SORT_BY
+        sort_by = request.GET.get('sort_by')
+        sort_order = request.GET.get('sort_order')
+        if sort_by and sort_order:
+            if sort_by == "monto":
+                sort_by = "cotizacion__monto"
+            if sort_order == 'asc':
+                solicitudes = solicitudes.order_by(sort_by)
+            elif sort_order == 'desc':
+                solicitudes = solicitudes.order_by(f'-{sort_by}')
+        else:
+            sort_by = ""
+            sort_order = ""
+
+        data['solicitudes'] = solicitudes
 
     return render(request, 'funcionario.html', data)
 
 
 # region FORMULARIO SOLICITUD
-
 def asignatura_view(request):
     campus_opciones = list(Emplazamiento.objects.all().values_list('nombre', flat=True))
     unidades_opciones = list(UnidadAcademica.objects.all().values_list('id_unidad_academica', 'nombre'))
@@ -140,7 +230,6 @@ def profesor_view(request):
     return render(request, 'profesor.html', {'form': form})
 
 
-# endregion
 
 def estudiantes_view(request):
     print(request.session['asignatura_data'])
@@ -226,16 +315,79 @@ def get_paralelos(request):
 
     # Retornamos los paralelos en formato JSON
     return JsonResponse({'paralelos': paralelos})
+# endregion
 
+#region INGENIER
+@check_user_role('ingeniero')
+def ingeniero_view(request, emplazamiento):
+    data = {
+        "emplazamiento": emplazamiento
+    }
 
-def visita(request):
-    if request.method == 'POST':
-        form = VisitaForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return HttpResponse("Visita guardada")
-    form = VisitaForm()
-    return render(request, 'visita.html', {'form': form})
+    if request.method == 'GET':
+        solicitudes = Solicitud.objects.filter(asignatura__departamento__emplazamiento__id_emplazamiento=emplazamiento)
+
+        # region FILTROS
+        estado = request.GET.get('estado')
+        if estado:
+            solicitudes = solicitudes.filter(estado=estado)
+        else:
+            estado = ""
+
+        tipo = request.GET.get('tipo')
+        if tipo:
+            solicitudes = solicitudes.filter(cotizacion__tipo=tipo)
+        else:
+            tipo = ""
+
+        rango_fecha = request.GET.get('rango_fecha')
+        fecha = ""
+        if rango_fecha:
+            fecha = request.GET.get('fecha')
+
+            if rango_fecha == 'antes':
+                solicitudes = solicitudes.filter(fecha__lte=fecha)
+            elif rango_fecha == 'despues':
+                solicitudes = solicitudes.filter(fecha__gte=fecha)
+        else:
+            rango_fecha = ""
+
+        monto_min = request.GET.get('monto_min')
+        monto_max = request.GET.get('monto_max')
+        if monto_min and monto_max:
+            solicitudes = solicitudes.filter(cotizacion__monto__gte=monto_min, cotizacion__monto__lte=monto_max)
+        else:
+            monto_min = 0
+            monto_max = 10000000
+
+        data["filtros"] = {
+            'estado': estado,
+            'tipo': tipo,
+            'rango_fecha': rango_fecha,
+            'fecha': fecha,
+            'monto_min': monto_min,
+            'monto_max': monto_max
+        }
+        # endregion
+
+        # region SORT_BY
+        sort_by = request.GET.get('sort_by')
+        sort_order = request.GET.get('sort_order')
+        if sort_by and sort_order:
+            if sort_by == "monto":
+                sort_by = "cotizacion__monto"
+            if sort_order == 'asc':
+                solicitudes = solicitudes.order_by(sort_by)
+            elif sort_order == 'desc':
+                solicitudes = solicitudes.order_by(f'-{sort_by}')
+        else:
+            sort_by = ""
+            sort_order = ""
+
+        data['solicitudes'] = solicitudes
+
+    return render(request, 'ingeniero.html', data)
+#endregion
 
 
 # region UTILIDADES
@@ -394,7 +546,6 @@ def poblar_bbdd_s(request):
             visitante = Visitante(rut=rut, nombre=f"{nombre} {apellido}", email=email, visita=v)
             visitante.save()
 
-
         # Cotización
         TIPO_CHOICES = [
             ('Solo traslado', 'Sólo traslado'),
@@ -468,7 +619,6 @@ def poblar_bbdd_s(request):
 
         cotizacion = Cotizacion(tipo=tipo, estado=estado, traslado=t, colacion=c, monto=monto_traslado + monto_colacion)
         cotizacion.save()
-
 
         # Solicitud
         # Random date between today and 2025

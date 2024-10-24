@@ -68,7 +68,7 @@ class Funcionario(models.Model):
 
 class Ingeniero(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
-    emplezamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
+    emplazamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.usuario} es ingeniero en {self.emplezamiento}"
@@ -76,7 +76,7 @@ class Ingeniero(models.Model):
 
 class Director(models.Model):
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
-    emplezamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
+    emplazamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.usuario} es ingeniero en {self.emplezamiento}"
