@@ -18,11 +18,6 @@ path('funcionario/crear_solicitud/profesor/', profesor_view, name='profesor_view
 path('funcionario/crear_solicitud/estudiantes/', estudiantes_view, name='estudiantes_view'),
 path('funcionario/crear_solicitud/cotizacion/', cotizacion_view, name='cotizacion_view'),
 
-
-# INGENIERO
-path('ingeniero/emplazamiento_<str:emplazamiento>', ingeniero_view, name='ingeniero'),
-
-
 path('funcionario/crear_solicitud/get_unidades', get_unidades, name='get_unidades'),
 path('funcionario/crear_solicitud/get_paralelos', get_paralelos, name='get_paralelos'),
 path('funcionario/crear_solicitud/get_asignaturas', get_asignaturas, name='get_asignaturas'),
@@ -30,6 +25,7 @@ path('funcionario/crear_solicitud/get_asignaturas', get_asignaturas, name='get_a
 
 
 # INGENIERO
+path('ingeniero/emplazamiento_<str:emplazamiento>', ingeniero_view, name='ingeniero'),
 
 # DIRECTOR
 
@@ -40,6 +36,7 @@ path('admin/load_users/', load_users, name='load_users'),
 path('admin/poblar/', poblar_bbdd, name='poblar_bbdd'),
 path('admin/poblar/usuarios', poblar_bbdd_u, name='poblar_bbdd_u'),
 path('admin/poblar/solicitudes', poblar_bbdd_s, name='poblar_bbdd_s'),
+path('test/correo_rechazo', correo_rechazo, name='correo_rechazo'),
 
 
 # ADMIN

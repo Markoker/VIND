@@ -1,12 +1,11 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Max
 from django.shortcuts import render, redirect
 from .forms import *
 from .models import *
 from .utils import *
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
-
+from django.core.mail import send_mail
 from random import randint
 import pandas as pd
 
@@ -401,6 +400,19 @@ def load_users(request):
 
     return redirect('login')
 
+def correo_rechazo(request):
+    subject = 'Su solicitud para la visita bla bla ha sido rechazada'
+
+    message = ('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec purus nec nunc'
+               'consequat fermentum. Nullam nec purus nec nunc consequat fermentum. Nullam nec purus nec nunc consequat fermentum.'
+               'Nullam nec purus nec nunc consequat fermentum. Nullam nec purus nec nunc consequat fermentum.')
+
+    from_email = 'correo_emisor@usm.cl'  # Puedes usar cualquier dirección aquí
+    recipient_list = ['correo_receptor@usm.cl']  # Lista de destinatarios
+
+    send_mail(subject, message, from_email, recipient_list)
+
+    return HttpResponse("Correo enviado")
 
 def poblar_bbdd(request):
     campus, departamento, semestre, asignaturas, paralelos = cargar('main/data/REPORTE ASIGNATURAS 2024.xlsx')
