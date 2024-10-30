@@ -264,6 +264,8 @@ def estudiantes_view(request):
         form = EstudiantesForm()
     return render(request, 'estudiantes.html', {'form': form})
 
+def confirmacion_view(request):
+    return render(request, 'cot_guardada.html')
 
 def cotizacion_view(request):
     print(request.session['asignatura_data'])
@@ -273,7 +275,7 @@ def cotizacion_view(request):
     if request.method == 'POST':
         form = CotizacionForm(request.POST, request.FILES)
         if form.is_valid():
-            return HttpResponse("Cotización guardada")
+            return redirect('confirmacion_view')
     else:
         form = CotizacionForm()
 
@@ -293,13 +295,15 @@ def get_unidades(request):
 def get_asignaturas(request):
     unidad = request.GET.get('unidad')
     semestre = request.GET.get('semestre')
+    #asignaturas = Asignatura.objects.filter(departamento__id=unidad, semestre=semestre).values_list('id_asignatura', 'nombre')
 
     asignaturas = Asignatura.objects.filter(departamento_id=unidad, semestre=semestre).values_list('id_asignatura',
-                                                                                                   'nombre').distinct(
+                                                                                                   'nombre', 'sigla').distinct(
         'nombre')
 
     asignaturas = list(asignaturas)
-
+    for i in range(len(asignaturas)):
+        print(asignaturas[i])
     return JsonResponse({'asignaturas': asignaturas})
 
 
@@ -583,12 +587,12 @@ def poblar_bbdd_s(request):
                          monto=monto_traslado)
 
             if monto_traslado > 1000000:
-                with open('/home/marcor/PycharmProjects/VIND/main/test.pdf', 'rb') as f:
+                with open('/home/sofia/vind3/VIND/main/data/test.pdf', 'rb') as f:
                     t.cotizacion_1.save('test.pdf', f)
                     t.cotizacion_2.save('test.pdf', f)
                     t.cotizacion_3.save('test.pdf', f)
             else:
-                with open('/home/marcor/PycharmProjects/VIND/main/test.pdf', 'rb') as f:
+                with open('/home/sofia/vind3/VIND/main/data/test.pdf', 'rb') as f:
                     t.cotizacion_1.save('test.pdf', f)
 
             t.save()
@@ -624,7 +628,7 @@ def poblar_bbdd_s(request):
                              rut_proveedor=empresa_colacion['rut'],
                              correo_proveedor=empresa_colacion['correo'])
 
-                with open('/home/marcor/PycharmProjects/VIND/main/test.pdf', 'rb') as f:
+                with open('/home/sofia/vind3/VIND/main/data/test.pdf', 'rb') as f:
                     c.cotizacion_1.save('test.pdf', f)
 
                 c.save()

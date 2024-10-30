@@ -17,10 +17,12 @@ path('funcionario/crear_solicitud/visita/', visita_view, name='visita_view'),
 path('funcionario/crear_solicitud/profesor/', profesor_view, name='profesor_view'),
 path('funcionario/crear_solicitud/estudiantes/', estudiantes_view, name='estudiantes_view'),
 path('funcionario/crear_solicitud/cotizacion/', cotizacion_view, name='cotizacion_view'),
+path('funcionario/crear_solicitud/confirmacion/', confirmacion_view, name='confirmacion_view'),
 
 path('funcionario/crear_solicitud/get_unidades', get_unidades, name='get_unidades'),
-path('funcionario/crear_solicitud/get_paralelos', get_paralelos, name='get_paralelos'),
 path('funcionario/crear_solicitud/get_asignaturas', get_asignaturas, name='get_asignaturas'),
+path('funcionario/crear_solicitud/get_paralelos', get_paralelos, name='get_paralelos'),
+
 
 
 

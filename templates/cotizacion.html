@@ -30,7 +30,7 @@
                     var montoPorPersona = parseFloat(montoPorPersonaField.value) || 0;
         
                     // Mostrar u ocultar campos relacionados con proveedores (para traslado o ambos)
-                    var showProveedor = (tipo === 'Solo traslado' || tipo === 'Traslado y colacion');
+                    var showProveedor = (tipo === 'Solo traslado' || tipo === 'Traslado y colacion' || tipo === 'Solo colacion');
                     proveedorFields.forEach(function (fieldId) {
                         document.getElementById(fieldId).closest('p').style.display = showProveedor ? '' : 'none';
                     });

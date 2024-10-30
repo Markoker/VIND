@@ -16,6 +16,7 @@
                         data: {
                             'campus': selectedCampus
                         },
+                        cache: false,
                         success: function(data){
                             $('#id_departamento').empty();
                             $('#id_departamento').append('<option value="">Seleccione una unidad académica</option>');
@@ -38,18 +39,19 @@
                             'unidad': selectedUnidad,
                             'semestre': selectedSemestre,
                         },
+                        cache: false,
                         success: function(data){
-                            console.log("Asignaturas recibidas:", data.asignaturas);
-                            $('#id_sigla').empty();  
-                            $('#id_sigla').append('<option value="">Seleccione una asignatura</option>');
+                            $('#id_asignatura').empty();  
+                            $('#id_asignatura').append('<option value="">Seleccione una asignatura</option>');
                             $.each(data.asignaturas, function(index, asignatura){
-                                $('#id_sigla').append('<option value="'+asignatura[0]+'">'+asignatura[1]+'</option>');
+                                console.log("Asignatura:", asignatura[0], asignatura[1]);
+                                $('#id_asignatura').append('<option value="'+asignatura[0]+'">'+asignatura[1]+" - " +asignatura[2] +'</option>');
                             });
                         }
                     });
                 }
             });
-            $('#id_sigla').change(function(){
+            $('#id_asignatura').change(function(){
                 var selectedAsignatura = $(this).val();
                 if(selectedAsignatura){
                     console.log("Selected asignatura:", selectedAsignatura);
