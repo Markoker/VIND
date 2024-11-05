@@ -272,8 +272,9 @@ def cotizacion_view(request):
     print(request.session['visita_data'])
     print(request.session['profesor_data'])
     print(request.session['estudiantes_data'])
+    cantidad = request.session['estudiantes_data']['cantidad']
     if request.method == 'POST':
-        form = CotizacionForm(request.POST, request.FILES)
+        form = CotizacionForm(request.POST, request.FILES, cantidad=cantidad)
         if form.is_valid():
             return redirect('confirmacion_view')
     else:

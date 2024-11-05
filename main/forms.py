@@ -60,6 +60,10 @@ class CotizacionForm(forms.Form):
     tipo_subvencion = forms.ChoiceField(choices=[('reembolso', 'Reembolso'), ('presupuesto', 'Previa presupuestación')],
                                         label='Tipo de subvención', required=False)
     monto_individual = forms.IntegerField(min_value=0, label='Monto individual', required=False)
+    
+    def __init__(self, *args, **kwargs):
+        self.cantidad = kwargs.pop('cantidad', 1)  # default to 1 if not provided
+        super().__init__(*args, **kwargs)
 
 
     class Meta:
@@ -88,6 +92,8 @@ class CotizacionForm(forms.Form):
                         'cotizacion_3')):
                     if not (cleaned_data.get('correo_presupuesto')):
                         self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
+        if monto_individual and monto and monto_individual * self.cantidad != monto:
+            self.add_error('monto', 'El monto total no coincide con el monto individual multiplicado por la cantidad de estudiantes.')
 
 
 class VisitaForm(forms.ModelForm):
