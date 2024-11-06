@@ -79,19 +79,15 @@ class CotizacionForm(forms.Form):
         monto_individual = cleaned_data.get('monto_individual')
         if not cleaned_data.get('cotizacion_1'):
             self.add_error('cotizacion_1', 'Adjunta al menos una cotización.')
-        if tipo == 'Solo traslado' or tipo == 'Traslado y colacion':
-            if monto and monto > 1000000:
-                if not (cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get(
-                        'cotizacion_3')):
-                    if not (cleaned_data.get('correo_presupuesto')):
-                        self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
-        if tipo == 'Solo colacion' or tipo == 'Traslado y colacion':
-            total = monto_individual * 2 if monto_individual else 0  # temporal
-            if total > 3 * 29360:
-                if not (cleaned_data.get('cotizacion_1') and cleaned_data.get('cotizacion_2') and cleaned_data.get(
-                        'cotizacion_3')):
-                    if not (cleaned_data.get('correo_presupuesto')):
-                        self.add_error('Debe adjuntar las cotizaciones o el correo de presupuesto.')
+
+        if tipo in ['Solo traslado', 'Traslado y colacion'] and monto > 1000000:
+            if not (cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3') or cleaned_data.get('correo_presupuesto')):
+                self.add_error('cotizacion_2', 'Adjunta las cotizaciones adicionales o el correo de presupuesto.')
+
+        if tipo in ['Solo colacion', 'Traslado y colacion'] and monto_individual * self.cantidad > (3 * 29360):
+            if not (cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3') or cleaned_data.get('correo_presupuesto')):
+                self.add_error('cotizacion_2', 'Adjunta las cotizaciones adicionales o el correo de presupuesto.')
+
         if monto_individual and monto and monto_individual * self.cantidad != monto:
             self.add_error('monto', 'El monto total no coincide con el monto individual multiplicado por la cantidad de estudiantes.')
 

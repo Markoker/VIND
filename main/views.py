@@ -6,8 +6,13 @@ from .utils import *
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
 from django.core.mail import send_mail
+from django.core.files.storage import default_storage
+from django.core.files import File
 from random import randint
 import pandas as pd
+import json
+import uuid
+import os
 
 
 def check_user_role(role):
@@ -106,9 +111,12 @@ def funcionario_view(request, unidad):
     }
 
     if request.method == 'GET':
-        solicitudes = Solicitud.objects.filter(usuario=request.user,
-                                               asignatura__departamento__id_unidad_academica=unidad)
+        unidades_academicas = Funcionario.objects.filter(usuario_id=request.user.rut).values_list('unidad_academica_id', flat=True)
 
+        solicitudes = Solicitud.objects.filter(
+            usuario=request.user,
+            asignatura__departamento__id_unidad_academica__in=unidades_academicas
+        )
         # region FILTROS
         estado = request.GET.get('estado')
         if estado:
@@ -264,18 +272,166 @@ def estudiantes_view(request):
         form = EstudiantesForm()
     return render(request, 'estudiantes.html', {'form': form})
 
+@login_required
 def confirmacion_view(request):
+    asignatura_data = request.session.get('asignatura_data')
+    visita_data = request.session.get('visita_data')
+    profesor_data = request.session.get('profesor_data')
+    estudiantes_data = request.session.get('estudiantes_data')
+    cotizacion_data = request.session.get('cotizacion_data')
+
+    # Retrieve related instances for foreign key references
+    asignatura = Asignatura.objects.get(id_asignatura=asignatura_data)
+    usuario = request.user  # Usamos el usuario autenticado
+
+    # Save Visita instance
+    visita = Visita.objects.create(
+        nombre_empresa=visita_data['nombre_empresa'],
+        fecha=visita_data['fecha'],
+        lugar=visita_data['lugar']
+    )
+
+    # Save Profesor instance
+    profesor = Profesor.objects.create(
+        visita=visita,
+        rut=profesor_data['rut'],
+        nombre=profesor_data['nombre'],
+        email=profesor_data['email']
+    )
+
+    # Initialize Traslado and Colacion instances as needed
+    traslado = None
+    colacion = None
+
+    # Save Traslado if type includes "traslado"
+    if cotizacion_data['tipo'] in ['Solo traslado', 'Traslado y colacion']:
+        traslado = Traslado.objects.create(
+            nombre_proveedor=cotizacion_data['nombre_proveedor'],
+            rut_proveedor=cotizacion_data['rut_proveedor'],
+            correo_proveedor=cotizacion_data['correo_proveedor'],
+            monto=cotizacion_data['monto']
+        )
+
+        # Attach files to traslado if paths exist
+        for i in range(1, 4):
+            path_key = f'cotizacion_{i}_path'
+            if path_key in cotizacion_data and default_storage.exists(cotizacion_data[path_key]):
+                original_file_name = cotizacion_data[path_key]
+                # Usar os.path.basename() para obtener solo el nombre del archivo
+                safe_file_name = os.path.basename(original_file_name)
+                # Generar un nombre único si es necesario
+                safe_file_name = f"{uuid.uuid4()}{os.path.splitext(safe_file_name)[1]}"
+                
+                with default_storage.open(original_file_name, 'rb') as f:
+                    getattr(traslado, f'cotizacion_{i}').save(safe_file_name, File(f))
+                default_storage.delete(original_file_name)
+
+    # Save Colacion if type includes "colacion"
+    if cotizacion_data['tipo'] in ['Solo colacion', 'Traslado y colacion']:
+        if cotizacion_data['tipo_subvencion'] == 'reembolso':
+            # Create Reembolso instance if needed
+            reembolso = Reembolso.objects.create(
+                monto=cotizacion_data['monto'],
+                fecha_pago=visita_data['fecha'],
+                estado="Pendiente",
+                usuario=usuario
+            )
+            colacion = Colacion.objects.create(
+                tipo_subvencion=cotizacion_data['tipo_subvencion'],
+                monto=cotizacion_data['monto'],
+                reembolso=reembolso
+            )
+        else:
+            # Save colacion with file if tipo_subvencion is "presupuesto"
+            colacion = Colacion.objects.create(
+                tipo_subvencion=cotizacion_data['tipo_subvencion'],
+                monto=cotizacion_data['monto'],
+                nombre_proveedor=cotizacion_data['nombre_proveedor'],
+                rut_proveedor=cotizacion_data['rut_proveedor'],
+                correo_proveedor=cotizacion_data['correo_proveedor']
+            )
+            if 'cotizacion_1_path' in cotizacion_data and default_storage.exists(cotizacion_data['cotizacion_1_path']):
+                original_file_name = cotizacion_data['cotizacion_1_path']
+                safe_file_name = os.path.basename(original_file_name)
+                safe_file_name = f"{uuid.uuid4()}{os.path.splitext(safe_file_name)[1]}"
+                
+                with default_storage.open(original_file_name, 'rb') as f:
+                    colacion.cotizacion_1.save(safe_file_name, File(f))
+                default_storage.delete(original_file_name)
+
+    # Save Cotizacion instance
+    cotizacion = Cotizacion.objects.create(
+        tipo=cotizacion_data['tipo'],
+        estado="Pendiente",
+        monto=cotizacion_data['monto'],
+        traslado=traslado,
+        colacion=colacion
+    )
+
+    # Save Solicitud instance
+    solicitud = Solicitud.objects.create(
+        fecha=visita_data['fecha'],
+        estado="Pendiente",
+        descripcion=visita_data.get('descripcion', 'Sin descripción'),
+        usuario=usuario,
+        asignatura=asignatura,
+        visita=visita,
+        cotizacion=cotizacion
+    )
+
+    # Clear session data after saving
+    request.session.pop('asignatura_data', None)
+    request.session.pop('visita_data', None)
+    request.session.pop('profesor_data', None)
+    request.session.pop('estudiantes_data', None)
+    request.session.pop('cotizacion_data', None)
+
     return render(request, 'cot_guardada.html')
 
+
 def cotizacion_view(request):
-    print(request.session['asignatura_data'])
-    print(request.session['visita_data'])
-    print(request.session['profesor_data'])
-    print(request.session['estudiantes_data'])
-    cantidad = request.session['estudiantes_data']['cantidad']
+    asignatura_data = request.session.get('asignatura_data')
+    visita_data = request.session.get('visita_data')
+    profesor_data = request.session.get('profesor_data')
+    estudiantes_data = request.session.get('estudiantes_data')
+    cantidad = estudiantes_data.get('cantidad')
+
     if request.method == 'POST':
         form = CotizacionForm(request.POST, request.FILES, cantidad=cantidad)
         if form.is_valid():
+            cotizacion_data = form.cleaned_data
+            
+            # Save files temporarily and store their paths in the session
+            if 'cotizacion_1' in request.FILES:
+                file_1 = request.FILES['cotizacion_1']
+                path_1 = default_storage.save(f"temp/{file_1.name}", file_1)
+                cotizacion_data['cotizacion_1_path'] = path_1
+
+            if 'cotizacion_2' in request.FILES:
+                file_2 = request.FILES['cotizacion_2']
+                path_2 = default_storage.save(f"temp/{file_2.name}", file_2)
+                cotizacion_data['cotizacion_2_path'] = path_2
+
+            if 'cotizacion_3' in request.FILES:
+                file_3 = request.FILES['cotizacion_3']
+                path_3 = default_storage.save(f"temp/{file_3.name}", file_3)
+                cotizacion_data['cotizacion_3_path'] = path_3
+
+            non_serializable_keys = ['cotizacion_1', 'cotizacion_2', 'cotizacion_3']
+            for key in non_serializable_keys:
+                if key in cotizacion_data:
+                    del cotizacion_data[key]
+
+            # Debugging: Attempt to serialize cotizacion_data to check for non-serializable data
+            try:
+                json.dumps(cotizacion_data)  # Attempt JSON serialization
+                print("cotizacion_data is JSON serializable.")
+            except TypeError as e:
+                print("Non-serializable data found in cotizacion_data:", e)
+                raise  # Reraise the error to halt execution for debugging
+
+            # Store the cleaned data without file objects
+            request.session['cotizacion_data'] = cotizacion_data
             return redirect('confirmacion_view')
     else:
         form = CotizacionForm()
