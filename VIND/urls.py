@@ -9,7 +9,7 @@ path('logout/', logout, name='logout'),
 path('home/', home_view, name='home'),
 
 # FUNCIONARIO
-path('funcionario/unidad_<str:unidad>/solicitudes', enviadas_view, name='funcionario'),
+path('funcionario/unidad_<str:unidad>/solicitudes', enviadas_view, name='solicitudesEnviadas'),
 
 # ENVIAR SOLICITUD (URLS EN ORDEN)
 path('funcionario/crear_solicitud/', asignatura_view, name='crear_solicitud'),
@@ -27,11 +27,12 @@ path('funcionario/crear_solicitud/get_paralelos', get_paralelos, name='get_paral
 
 
 # INGENIERO
-path('ingeniero/<str:emplazamiento>/recibidas', recibidas_view, name='ingeniero'),
+path('ingeniero/<str:emplazamiento>/recibidas', recibidas_view, name='requerimientosTabular'),
 # path('ingeniero/emplazamiento_<str:emplazamiento>/historial', historial_view, name='ingeniero_historial'),
-path('ingeniero/<str:emplazamiento>/recibidas/<str:solicitud>', validar_ingeniero, name='validar_ingeniero'),
+path('ingeniero/<str:emplazamiento>/recibidas/<str:solicitud>', validar_ingeniero, name='requerimientosEspecifica'),
 
 # DIRECTOR
+path('subdirector/<str:unidad>/recibidas', presupuestoTabular_view, name='presupuestoTabular'),
 
 # SUBDIRECTOR
 

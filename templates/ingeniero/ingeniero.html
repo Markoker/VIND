@@ -87,7 +87,7 @@
         
             {% with emp=emplazamiento %}
                 {% with soli=solicitud.id_solicitud %}
-                    <a href="{% url 'validar_ingeniero' emp soli %}">Ver</a>
+                    <a href="{% url 'requerimientosEspecifica' emp soli %}">Ver</a>
                 {% endwith %}
             {% endwith %}
         </div>

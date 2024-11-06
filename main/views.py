@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.core.files.storage import default_storage
 from django.core.files import File
 from random import randint
+from datetime import datetime
 import pandas as pd
 import json
 import uuid
@@ -545,7 +546,7 @@ def recibidas_view(request, emplazamiento):
 
         data['solicitudes'] = solicitudes
 
-    return render(request, 'ingeniero.html', data)
+    return render(request, 'ingeniero/ingeniero.html', data)
 
 '''
 @check_user_role('ingeniero')
@@ -573,15 +574,97 @@ def validar_ingeniero(request, emplazamiento, solicitud):
 
         if decision == "0":
             print("Rechazada")
+            soli = Solicitud.objects.get(id_solicitud=solicitud)
+            hist = HistorialEstadoSolicitud(usuario_decision=request.user,
+                                            solicitud=soli,
+                                            estado_anterior=soli.estado,
+                                            decision='rechazada',
+                                            fecha_decision=datetime.now())
+
+            soli.estado = 0
+            soli.save()
         else:
             print("Aprobada")
+            soli = Solicitud.objects.get(id_solicitud=solicitud)
+            hist = HistorialEstadoSolicitud(usuario_decision= request.user,
+                                            solicitud=soli,
+                                            estado_anterior=soli.estado,
+                                            decision='aprobada',
+                                            fecha_decision=datetime.now())
 
-        return redirect('ingeniero', emplazamiento=emplazamiento)
+            soli.estado = 3
+            soli.save()
 
-    return render(request, 'validar_ingeniero.html', data)
+        hist.save()
+
+        return redirect('requerimientosTabular', emplazamiento=emplazamiento)
+
+    return render(request, 'ingeniero/validar_ingeniero.html', data)
 
 # endregion
 
+# region SUBDIRECTOR
+def presupuestoTabular_view(request, unidad):
+    data = {
+        "unidad": UnidadAcademica.objects.get(id_unidad_academica=unidad)
+    }
+
+    if request.method == 'GET':
+        solicitudes = Solicitud.objects.filter(asignatura__departamento__id_unidad_academica=unidad, estado=3)
+
+        tipo = request.GET.get('tipo')
+        if tipo:
+            solicitudes = solicitudes.filter(cotizacion__tipo=tipo)
+        else:
+            tipo = ""
+
+        rango_fecha = request.GET.get('rango_fecha')
+        fecha = ""
+        if rango_fecha:
+            fecha = request.GET.get('fecha')
+
+            if rango_fecha == 'antes':
+                solicitudes = solicitudes.filter(fecha__lte=fecha)
+            elif rango_fecha == 'despues':
+                solicitudes = solicitudes.filter(fecha__gte=fecha)
+        else:
+            rango_fecha = ""
+
+        monto_min = request.GET.get('monto_min')
+        monto_max = request.GET.get('monto_max')
+        if monto_min and monto_max:
+            solicitudes = solicitudes.filter(cotizacion__monto__gte=monto_min, cotizacion__monto__lte=monto_max)
+        else:
+            monto_min = 0
+            monto_max = 10000000
+
+        data["filtros"] = {
+            'tipo': tipo,
+            'rango_fecha': rango_fecha,
+            'fecha': fecha,
+            'monto_min': monto_min,
+            'monto_max': monto_max
+        }
+        # endregion
+
+        # region SORT_BY
+        sort_by = request.GET.get('sort_by')
+        sort_order = request.GET.get('sort_order')
+        if sort_by and sort_order:
+            if sort_by == "monto":
+                sort_by = "cotizacion__monto"
+            if sort_order == 'asc':
+                solicitudes = solicitudes.order_by(sort_by)
+            elif sort_order == 'desc':
+                solicitudes = solicitudes.order_by(f'-{sort_by}')
+        else:
+            sort_by = ""
+            sort_order = ""
+
+        data['solicitudes'] = solicitudes
+
+    return render(request, 'subdirector/presupuestoTabular.html', data)
+# endregion
 
 # region UTILIDADES
 def load_users(request):

@@ -108,7 +108,7 @@ class Solicitud(models.Model):
     cotizacion = models.ForeignKey('Cotizacion', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
+        return f"[{self.id_solicitud}] {self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
 
 
 class HistorialEstadoSolicitud(models.Model):
@@ -126,12 +126,14 @@ class HistorialEstadoSolicitud(models.Model):
         (5, 'Orden de compra pendiente')
     ]
 
+    usuario_decision = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, related_name='historial')
     estado_anterior = models.IntegerField(null=False, blank=False, choices=ESTADO_CHOICES)
-    estado_decision = models.CharField(choices=ESTADO_DECISION_CHOICES, max_length=10)
+    decision = models.CharField(choices=ESTADO_DECISION_CHOICES, max_length=10)
+    fecha_decision = models.DateField()
 
     def __str__(self):
-        return f"{self.solicitud} - {self.etapa} - {self.estado_decision} en {self.fecha_decision}"
+        return f"{self.solicitud.id_solicitud}: {self.estado_anterior} {self.decision} en {self.fecha_decision}"
 
 
 class Visita(models.Model):

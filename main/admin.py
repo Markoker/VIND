@@ -17,3 +17,5 @@ admin.site.register(Funcionario)
 admin.site.register(Ingeniero)
 admin.site.register(Subdirector)
 admin.site.register(Director)
+
+admin.site.register(HistorialEstadoSolicitud)
