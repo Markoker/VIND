@@ -406,25 +406,26 @@ def cotizacion_view(request):
             cotizacion_data = form.cleaned_data
             
             # Save files temporarily and store their paths in the session
-            if 'cotizacion_1' in request.FILES:
-                file_1 = request.FILES['cotizacion_1']
-                path_1 = default_storage.save(f"temp/{file_1.name}", file_1)
-                cotizacion_data['cotizacion_1_path'] = path_1
+            for i in range(1, 4):
+                file_key = f'cotizacion_{i}_traslado'
+                if file_key in request.FILES:
+                    file = request.FILES[file_key]
+                    path = default_storage.save(f"temp/{file.name}", file)
+                    cotizacion_data[f'{file_key}_path'] = path
+            
+            # Guardar archivos temporalmente para colaciÃ³n
+            for i in range(1, 4):
+                file_key = f'cotizacion_{i}_colacion'
+                if file_key in request.FILES:
+                    file = request.FILES[file_key]
+                    path = default_storage.save(f"temp/{file.name}", file)
+                    cotizacion_data[f'{file_key}_path'] = path
 
-            if 'cotizacion_2' in request.FILES:
-                file_2 = request.FILES['cotizacion_2']
-                path_2 = default_storage.save(f"temp/{file_2.name}", file_2)
-                cotizacion_data['cotizacion_2_path'] = path_2
+            # Quitar claves no serializables
+            for key in ['cotizacion_1_traslado', 'cotizacion_2_traslado', 'cotizacion_3_traslado',
+                        'cotizacion_1_colacion', 'cotizacion_2_colacion', 'cotizacion_3_colacion']:
+                cotizacion_data.pop(key, None)
 
-            if 'cotizacion_3' in request.FILES:
-                file_3 = request.FILES['cotizacion_3']
-                path_3 = default_storage.save(f"temp/{file_3.name}", file_3)
-                cotizacion_data['cotizacion_3_path'] = path_3
-
-            non_serializable_keys = ['cotizacion_1', 'cotizacion_2', 'cotizacion_3']
-            for key in non_serializable_keys:
-                if key in cotizacion_data:
-                    del cotizacion_data[key]
 
             # Debugging: Attempt to serialize cotizacion_data to check for non-serializable data
             try:

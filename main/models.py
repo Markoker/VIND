@@ -179,9 +179,9 @@ class Traslado(models.Model):
     rut_proveedor = models.CharField(max_length=20, blank=True, null=True)
     correo_proveedor = models.EmailField(blank=True, null=True)
     monto = models.PositiveIntegerField()
-    cotizacion_1 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
-    cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
-    cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_1 = models.FileField(upload_to='cotizaciones/traslado/', null=True, blank=True)
+    cotizacion_2 = models.FileField(upload_to='cotizaciones/traslado/', null=True, blank=True)
+    cotizacion_3 = models.FileField(upload_to='cotizaciones/traslado/', null=True, blank=True)
 
 
 class Colacion(models.Model):
@@ -195,14 +195,13 @@ class Colacion(models.Model):
     nombre_proveedor = models.CharField(max_length=255, blank=True, null=True)
     rut_proveedor = models.CharField(max_length=20, blank=True, null=True)
     correo_proveedor = models.EmailField(blank=True, null=True)
-    cotizacion_1 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
-    cotizacion_2 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
-    cotizacion_3 = models.FileField(upload_to='cotizaciones/', null=True, blank=True)
+    cotizacion_1 = models.FileField(upload_to='cotizaciones/colacion/', null=True, blank=True)
+    cotizacion_2 = models.FileField(upload_to='cotizaciones/colacion/', null=True, blank=True)
+    cotizacion_3 = models.FileField(upload_to='cotizaciones/colacion/', null=True, blank=True)
 
     monto = models.PositiveIntegerField(blank=True, null=True)
 
     reembolso = models.ForeignKey('Reembolso', on_delete=models.CASCADE, null=True, blank=True)
-
 
 class Reembolso(models.Model):
     id_reembolso = models.AutoField(primary_key=True)

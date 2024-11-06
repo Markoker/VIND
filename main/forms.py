@@ -47,14 +47,23 @@ class CotizacionForm(forms.Form):
                                       ('Solo colacion', 'Solo colacion'),
                                       ('Traslado y colacion', 'Traslado y colacion')],
                              label='Tipo de cotización')
-    nombre_proveedor = forms.CharField(max_length=64, label='Nombre del proveedor')
-    rut_proveedor = forms.CharField(max_length=12, label='RUT del proveedor')
-    correo_proveedor = forms.EmailField(label='Correo del proveedor')
-    monto = forms.IntegerField(min_value=0, label='Monto total')
+    nombre_proveedor_traslado = forms.CharField(max_length=64, label='Nombre del proveedor de traslado')
+    rut_proveedor_traslado = forms.CharField(max_length=12, label='RUT del proveedor de traslado')
+    correo_proveedor_traslado = forms.EmailField(label='Correo del proveedor de traslado')
+    monto_traslado = forms.IntegerField(min_value=0, label='Monto total de traslado')
 
-    cotizacion_1 = forms.FileField(label='Cotización 1')
-    cotizacion_2 = forms.FileField(label='Cotización 2', required=False)
-    cotizacion_3 = forms.FileField(label='Cotización 3', required=False)
+    nombre_proveedor_colacion = forms.CharField(max_length=64, label='Nombre del proveedor de colacion')
+    rut_proveedor_colacion = forms.CharField(max_length=12, label='RUT del proveedor de colacion')
+    correo_proveedor_colacion = forms.EmailField(label='Correo del proveedor de colacion')
+    monto_colacion = forms.IntegerField(min_value=0, label='Monto total de colacion')
+
+    cotizacion_1_traslado = forms.FileField(label='Cotización de traslado 1')
+    cotizacion_2_traslado = forms.FileField(label='Cotización de traslado 2', required=False)
+    cotizacion_3_traslado = forms.FileField(label='Cotización de traslado 3', required=False)
+
+    cotizacion_1_colacion = forms.FileField(label='Cotización de colacion 1')
+    cotizacion_2_colacion = forms.FileField(label='Cotización de colacion 2', required=False)
+    cotizacion_3_colacion = forms.FileField(label='Cotización de colacion 3', required=False)
 
     correo_presupuesto = forms.EmailField(label='Correo de presupuesto', required=False)
     tipo_subvencion = forms.ChoiceField(choices=[('reembolso', 'Reembolso'), ('presupuesto', 'Previa presupuestación')],
@@ -76,17 +85,26 @@ class CotizacionForm(forms.Form):
         tipo = cleaned_data.get('tipo')
         monto = cleaned_data.get('monto')
         tipo_subvencion = cleaned_data.get('tipo_subvencion')
+        monto_traslado = cleaned_data.get('monto_traslado')
         monto_individual = cleaned_data.get('monto_individual')
         if not cleaned_data.get('cotizacion_1'):
             self.add_error('cotizacion_1', 'Adjunta al menos una cotización.')
 
-        if tipo in ['Solo traslado', 'Traslado y colacion'] and monto > 1000000:
-            if not (cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3') or cleaned_data.get('correo_presupuesto')):
-                self.add_error('cotizacion_2', 'Adjunta las cotizaciones adicionales o el correo de presupuesto.')
+        if tipo in ['Solo traslado', 'Traslado y colacion']:
+            if monto_traslado and monto_traslado > 1000000:
+                if not cleaned_data.get('cotizacion_2_traslado') or not cleaned_data.get('cotizacion_3_traslado'):
+                    self.add_error('cotizacion_2_traslado', 'Adjunta las cotizaciones adicionales si el monto supera 1,000,000.')
 
-        if tipo in ['Solo colacion', 'Traslado y colacion'] and monto_individual * self.cantidad > (3 * 29360):
-            if not (cleaned_data.get('cotizacion_2') and cleaned_data.get('cotizacion_3') or cleaned_data.get('correo_presupuesto')):
-                self.add_error('cotizacion_2', 'Adjunta las cotizaciones adicionales o el correo de presupuesto.')
+        # Validación de cotización para colación
+        if tipo in ['Solo colacion', 'Traslado y colacion']:
+            if monto_individual and monto_individual > 6000:
+                if not cleaned_data.get('cotizacion_2_colacion') or not cleaned_data.get('cotizacion_3_colacion'):
+                    self.add_error('cotizacion_2_colacion', 'Adjunta las cotizaciones adicionales si el monto individual supera 6,000.')
+        
+        # Instructivo para el tipo de subvención
+        if tipo == 'Solo colacion' and tipo_subvencion == 'reembolso' and monto_individual and monto_individual > 6000:
+            self.fields['correo_presupuesto'].required = True
+            self.add_error('correo_presupuesto', 'Debe adjuntar el correo de presupuesto para reembolsos con monto individual alto.')
 
         if monto_individual and monto and monto_individual * self.cantidad != monto:
             self.add_error('monto', 'El monto total no coincide con el monto individual multiplicado por la cantidad de estudiantes.')
