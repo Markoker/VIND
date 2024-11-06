@@ -1,77 +1,98 @@
 {% load tags %}
 
-<a href="{% url 'home' %}">Volver</a>
-
-<form method="get">
-    <input type="hidden" name="form_type" value="filter">
-
-    <label for="estado">Estado</label>
-    <select name="estado" id="estado">
-        <option value="" {% if filtros.estado == "" %}selected{% endif %}>Todos</option>
-        <option value="Pendiente" {% if filtros.estado == "Pendiente" %}selected{% endif %}>Pendiente</option>
-        <option value="Aprobado" {% if filtros.estado == "Aprobado" %}selected{% endif %}>Aprobado</option>
-        <option value="Rechazado" {% if filtros.estado == "Rechazado" %}selected{% endif %}>Rechazado</option>
-    </select>
-
-    <label for="tipo">Tipo</label>
-    <select name="tipo" id="tipo">
-        <option value="" {% if filtros.tipo == "" %}selected{% endif %}>Todos</option>
-        <option value="Cotización" {% if filtros.tipo == "Cotización" %}selected{% endif %}>Cotización</option>
-        <option value="Solicitud" {% if filtros.tipo == "Solicitud" %}selected{% endif %}>Solicitud</option>
-        <option value="Ambas" {% if filtros.tipo == "Ambas" %}selected{% endif %}>Ambas</option>
-    </select>
-
-    <label for="monto_min">Monto mínimo</label>
-    <input type="range" name="monto_min" id="monto_min" min="0" max="10000000" step="1000" value="{{ filtros.monto_min }}">
-    <output for="monto_min" name="monto_output">{{ filtros.monto_min|default_if_none:0 }}</output>
-
-    <label for="monto_max">Monto máximo</label>
-    <input type="range" name="monto_max" id="monto_max" min="0" max="10000000" step="1000" value="{{ filtros.monto_max }}">
-    <output for="monto_max" name="monto_output">{{ filtros.monto_max|default_if_none:10000000 }}</output>
-
-    <label for="rango_fecha">Filtro fecha:</label>
-    <select name="rango_fecha" id="rango_fecha">
-        <option value="" {% if filtros.rango_fecha == "" %}selected{% endif %}>Ninguno</option>
-        <option value="antes" {% if filtros.rango_fecha == "antes" %}selected{% endif %}>Antes de</option>
-        <option value="despues" {% if filtros.rango_fecha == "despues" %}selected{% endif %}>Después de</option>
-    </select>
-
-    <label for="fecha">Fecha</label>
-    <input type="date" name="fecha" id="fecha" value="{{ filtros.fecha }}">
-
-    <button type="submit">Filtrar</button>
-</form>
-
-<!-- Make a sort by select -->
-<form method="get">
-    <label for="sort_by">Ordenar por:</label>
-    <select name="sort_by" id="sort_by">
-        <option value="fecha" {% if filtros.sort_by == "fecha" %}selected{% endif %}>Fecha</option>
-        <option value="monto" {% if filtros.sort_by == "monto" %}selected{% endif %}>Monto</option>
-    </select>
-
-    <label for="sort_order">Orden:</label>
-    <select name="sort_order" id="sort_order">
-        <option value="asc" {% if filtros.sort_order == "asc" %}selected{% endif %}>Ascendente</option>
-        <option value="desc" {% if filtros.sort_order == "desc" %}selected{% endif %}>Descendente</option>
-    </select>
-
-    <button type="submit">Ordenar</button>
-</form>
-
-<h2>Mis solicitudes ({{ solicitudes|length }})</h2>
-<div class="solicitudes">
-{% for solicitud in solicitudes %}
-    <div>
-        <p>Enviado por: {{ solicitud.usuario.email }}</p>
-        <p>Lugar: {{ solicitud.visita.lugar }}</p>
-        <p>Asignatura: {{ solicitud.asignatura.sigla }} - {{ solicitud.asignatura.nombre }}</p>
-        <p>Tipo: {{ solicitud.cotizacion.tipo }}</p>
-        <p>Monto: ${{ solicitud.cotizacion.monto|separator }} </p>
-        <p>Fecha envio: {{ solicitud.fecha|date:"SHORT_DATE_FORMAT" }}</p>
-        <p>Estado: {{ solicitud.estado }}</p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingeniero</title>
+</head>
+<body>
+<div id="header">
+    <h1>Bienvenido, {{ user.email }}</h1>
+    <a href="{% url 'home' %}">Volver</a>
+    <a href="{% url 'logout' %}">Cerrar sesión</a>
+</div>
+<aside>
+    <h2>Menú</h2>
+    <ul>
+        <li><p>Solicitudes recibidas</p></li>
+        <li><a href="#">Historial</a></li>
+    </ul>
+</aside>
+<div id="main">
+    <div class="filtros">
+        <form method="get">
+            <input type="hidden" name="form_type" value="filter">
+        
+            <label for="tipo">Tipo</label>
+            <select name="tipo" id="tipo">
+                <option value="" {% if filtros.tipo == "" %}selected{% endif %}>Todos</option>
+                <option value="Cotización" {% if filtros.tipo == "Cotización" %}selected{% endif %}>Cotización</option>
+                <option value="Solicitud" {% if filtros.tipo == "Solicitud" %}selected{% endif %}>Solicitud</option>
+                <option value="Ambas" {% if filtros.tipo == "Ambas" %}selected{% endif %}>Ambas</option>
+            </select>
+        
+            <label for="monto_min">Monto mínimo</label>
+            <input type="range" name="monto_min" id="monto_min" min="0" max="10000000" step="1000" value="{{ filtros.monto_min }}">
+            <output for="monto_min" name="monto_output">{{ filtros.monto_min|default_if_none:0 }}</output>
+        
+            <label for="monto_max">Monto máximo</label>
+            <input type="range" name="monto_max" id="monto_max" min="0" max="10000000" step="1000" value="{{ filtros.monto_max }}">
+            <output for="monto_max" name="monto_output">{{ filtros.monto_max|default_if_none:10000000 }}</output>
+        
+            <label for="rango_fecha">Filtro fecha:</label>
+            <select name="rango_fecha" id="rango_fecha">
+                <option value="" {% if filtros.rango_fecha == "" %}selected{% endif %}>Ninguno</option>
+                <option value="antes" {% if filtros.rango_fecha == "antes" %}selected{% endif %}>Antes de</option>
+                <option value="despues" {% if filtros.rango_fecha == "despues" %}selected{% endif %}>Después de</option>
+            </select>
+        
+            <label for="fecha">Fecha</label>
+            <input type="date" name="fecha" id="fecha" value="{{ filtros.fecha }}">
+        
+            <button type="submit">Filtrar</button>
+        </form>
+        
+        <!-- Make a sort by select -->
+        <form method="get">
+            <label for="sort_by">Ordenar por:</label>
+            <select name="sort_by" id="sort_by">
+                <option value="fecha" {% if filtros.sort_by == "fecha" %}selected{% endif %}>Fecha</option>
+                <option value="monto" {% if filtros.sort_by == "monto" %}selected{% endif %}>Monto</option>
+            </select>
+        
+            <label for="sort_order">Orden:</label>
+            <select name="sort_order" id="sort_order">
+                <option value="asc" {% if filtros.sort_order == "asc" %}selected{% endif %}>Ascendente</option>
+                <option value="desc" {% if filtros.sort_order == "desc" %}selected{% endif %}>Descendente</option>
+            </select>
+        
+            <button type="submit">Ordenar</button>
+        </form>
     </div>
-{% endfor %}
+    
+    <h2>Mis solicitudes ({{ solicitudes|length }})</h2>
+    <div class="solicitudes">
+    {% for solicitud in solicitudes %}
+        <div>
+            <p>Enviado por: {{ solicitud.usuario.email }}</p>
+            <p>Lugar: {{ solicitud.visita.lugar }}</p>
+            <p>Asignatura: {{ solicitud.asignatura.sigla }} - {{ solicitud.asignatura.nombre }}</p>
+            <p>Tipo: {{ solicitud.cotizacion.tipo }}</p>
+            <p>Monto: ${{ solicitud.cotizacion.monto|separator }} </p>
+            <p>Fecha envio: {{ solicitud.fecha|date:"SHORT_DATE_FORMAT" }}</p>
+            <p>Estado: {{ solicitud.estado }}</p>
+        
+            {% with emp=emplazamiento %}
+                {% with soli=solicitud.id_solicitud %}
+                    <a href="{% url 'validar_ingeniero' emp soli %}">Ver</a>
+                {% endwith %}
+            {% endwith %}
+        </div>
+    {% endfor %}
+    </div>
 </div>
 
 <style>

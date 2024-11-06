@@ -9,9 +9,12 @@
     <label for="estado">Estado</label>
     <select name="estado" id="estado">
         <option value="" {% if filtros.estado == "" %}selected{% endif %}>Todos</option>
-        <option value="Pendiente" {% if filtros.estado == "Pendiente" %}selected{% endif %}>Pendiente</option>
-        <option value="Aprobado" {% if filtros.estado == "Aprobado" %}selected{% endif %}>Aprobado</option>
-        <option value="Rechazado" {% if filtros.estado == "Rechazado" %}selected{% endif %}>Rechazado</option>
+        <option value="1" {% if filtros.estado == "1" %}selected{% endif %}>Aprobada</option>
+        <option value="0" {% if filtros.estado == "0" %}selected{% endif %}>Rechazada</option>
+        <option value="2" {% if filtros.estado == "2" %}selected{% endif %}>Requerimientos pendientes</option>
+        <option value="3" {% if filtros.estado == "3" %}selected{% endif %}>Presupuesto pendiente</option>
+        <option value="4" {% if filtros.estado == "4" %}selected{% endif %}>Firma pendiente</option>
+        <option value="5" {% if filtros.estado == "5" %}selected{% endif %}>Orden de compra pendiente</option>
     </select>
 
     <label for="tipo">Tipo</label>
@@ -68,7 +71,7 @@
         <p>Tipo: {{ solicitud.cotizacion.tipo }}</p>
         <p>Monto: ${{ solicitud.cotizacion.monto|separator }} </p>
         <p>Fecha envio: {{ solicitud.fecha|date:"SHORT_DATE_FORMAT" }}</p>
-        <p>Estado: {{ solicitud.estado }}</p>
+        <p>Estado: {{ solicitud.estado|estado_funcionario }}</p>
     </div>
 {% endfor %}
 </div>

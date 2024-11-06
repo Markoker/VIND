@@ -105,7 +105,7 @@ def home_view(request):
 
 
 @check_user_role('funcionario')
-def funcionario_view(request, unidad):
+def enviadas_view(request, unidad):
     data = {
         "unidad": unidad
     }
@@ -183,7 +183,7 @@ def funcionario_view(request, unidad):
 def asignatura_view(request):
     campus_opciones = list(Emplazamiento.objects.all().values_list('nombre', flat=True))
     unidades_opciones = list(UnidadAcademica.objects.all().values_list('id_unidad_academica', 'nombre'))
-    semestre_opciones = list(range(1, 3))
+    semestre_opciones = [1,2] 
     asignaturas_opciones = list(Asignatura.objects.all().values_list('id_asignatura', 'nombre'))
     paralelos_opciones = list(Asignatura.objects.all().distinct('paralelo').values_list('paralelo', flat=True))
 
@@ -235,7 +235,6 @@ def profesor_view(request):
     else:
         form = ProfesorForm()
     return render(request, 'profesor.html', {'form': form})
-
 
 
 def estudiantes_view(request):
@@ -396,6 +395,10 @@ def cotizacion_view(request):
     estudiantes_data = request.session.get('estudiantes_data')
     cantidad = estudiantes_data.get('cantidad')
 
+    data = {}
+
+    data['cantidad'] = cantidad
+
     if request.method == 'POST':
         form = CotizacionForm(request.POST, request.FILES, cantidad=cantidad)
         if form.is_valid():
@@ -436,7 +439,9 @@ def cotizacion_view(request):
     else:
         form = CotizacionForm()
 
-    return render(request, 'cotizacion.html', {'form': form})
+    data['form'] = form
+    
+    return render(request, 'cotizacion.html', data)
 
 
 def get_unidades(request):
@@ -455,8 +460,7 @@ def get_asignaturas(request):
     #asignaturas = Asignatura.objects.filter(departamento__id=unidad, semestre=semestre).values_list('id_asignatura', 'nombre')
 
     asignaturas = Asignatura.objects.filter(departamento_id=unidad, semestre=semestre).values_list('id_asignatura',
-                                                                                                   'nombre', 'sigla').distinct(
-        'nombre')
+                                                                                                   'nombre', 'sigla').order_by('sigla').distinct('sigla')
 
     asignaturas = list(asignaturas)
     for i in range(len(asignaturas)):
@@ -475,24 +479,20 @@ def get_paralelos(request):
 
     # Retornamos los paralelos en formato JSON
     return JsonResponse({'paralelos': paralelos})
+
+
 # endregion
 
-#region INGENIER
+# region INGENIER
 @check_user_role('ingeniero')
-def ingeniero_view(request, emplazamiento):
+def recibidas_view(request, emplazamiento):
     data = {
         "emplazamiento": emplazamiento
     }
 
     if request.method == 'GET':
-        solicitudes = Solicitud.objects.filter(asignatura__departamento__emplazamiento__id_emplazamiento=emplazamiento)
-
-        # region FILTROS
-        estado = request.GET.get('estado')
-        if estado:
-            solicitudes = solicitudes.filter(estado=estado)
-        else:
-            estado = ""
+        solicitudes = Solicitud.objects.filter(asignatura__departamento__emplazamiento__id_emplazamiento=emplazamiento,
+                                               estado=2)
 
         tipo = request.GET.get('tipo')
         if tipo:
@@ -521,7 +521,6 @@ def ingeniero_view(request, emplazamiento):
             monto_max = 10000000
 
         data["filtros"] = {
-            'estado': estado,
             'tipo': tipo,
             'rango_fecha': rango_fecha,
             'fecha': fecha,
@@ -547,7 +546,41 @@ def ingeniero_view(request, emplazamiento):
         data['solicitudes'] = solicitudes
 
     return render(request, 'ingeniero.html', data)
-#endregion
+
+'''
+@check_user_role('ingeniero')
+def historial_view(request, emplazamiento):
+    return render(request, "vista.html")
+'''
+
+
+@check_user_role('ingeniero')
+def validar_ingeniero(request, emplazamiento, solicitud):
+    data = {'emplazamiento': emplazamiento, 'solicitud': solicitud}
+
+    if request.method == 'GET':
+        solicitud = Solicitud.objects.filter(id_solicitud=solicitud).first()
+
+        data['solicitud'] = solicitud
+
+        visita = solicitud.visita
+
+        visitantes = Visitante.objects.filter(visita=visita)
+        data['visitantes'] = visitantes
+    elif request.method == 'POST':
+        decision = request.POST.get('decision')
+        print(decision)
+
+        if decision == "0":
+            print("Rechazada")
+        else:
+            print("Aprobada")
+
+        return redirect('ingeniero', emplazamiento=emplazamiento)
+
+    return render(request, 'validar_ingeniero.html', data)
+
+# endregion
 
 
 # region UTILIDADES
@@ -560,6 +593,7 @@ def load_users(request):
     # Usuario.objects.create_superuser(email="marco.repetto@usm.cl", password="1234", rut="21489358-4")
 
     return redirect('login')
+
 
 def correo_rechazo(request):
     subject = 'Su solicitud para la visita bla bla ha sido rechazada'
@@ -574,6 +608,7 @@ def correo_rechazo(request):
     send_mail(subject, message, from_email, recipient_list)
 
     return HttpResponse("Correo enviado")
+
 
 def poblar_bbdd(request):
     campus, departamento, semestre, asignaturas, paralelos = cargar('main/data/REPORTE ASIGNATURAS 2024.xlsx')
@@ -691,22 +726,23 @@ def poblar_bbdd_s(request):
     Traslado.objects.all().delete()
     Colacion.objects.all().delete()
 
-    for i in range(30):
-        # Visita
-        nombre_empresa = generar_empresa()['nombre']
-        fecha_visita = date.today() + timedelta(days=randrange(120))
-        lugar = generar_lugar()
-
-        v = Visita(nombre_empresa=nombre_empresa, fecha=fecha_visita, lugar=lugar)
-        v.save()
-
+    for i in range(302):
         # Profesor
         nombre = nombres[randint(0, len(nombres) - 1)]
         apellido = apellidos[randint(0, len(apellidos) - 1)]
         rut = str(randint(10000000, 25000000)) + '-' + str(randint(0, 9))
         email = f"{nombre}.{apellido}@usm.cl"
 
-        p = Profesor(rut=rut, nombre=f"{nombre} {apellido}", email=email, visita=v)
+        p = Profesor(rut=rut, nombre=f"{nombre} {apellido}", email=email)
+        p.save()
+
+        # Visita
+        nombre_empresa = generar_empresa()['nombre']
+        fecha_visita = date.today() + timedelta(days=randrange(120))
+        lugar = generar_lugar()
+
+        v = Visita(nombre_empresa=nombre_empresa, fecha=fecha_visita, lugar=lugar, profesor=p)
+        v.save()
 
         # Visitantes
         cantidad = randint(15, 60)
@@ -801,7 +837,7 @@ def poblar_bbdd_s(request):
         random_days = randrange(delta.days)
         fecha = start_date + timedelta(days=random_days)
 
-        estado = 'Pendiente'
+        estado = randint(0, 3)
 
         # Random asignatura
         asignatura = Asignatura.objects.all().order_by('?').first()

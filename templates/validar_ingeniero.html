@@ -1,0 +1,39 @@
+{% load tags %}
+
+<h2>Mis solicitudes ({{ solicitudes|length }})</h2>
+    <div class="solicitudes">
+        <div>
+            <p>Enviado por: {{ solicitud.usuario.email }}</p>
+            <p>Estado: {{ solicitud.estado }}</p>
+            <p>Asignatura: {{ solicitud.asignatura.sigla }} - {{ solicitud.asignatura.nombre }}</p>
+            <p>Lugar: {{ solicitud.visita.lugar }}</p>
+            <p>Tipo: {{ solicitud.cotizacion.tipo }}</p>
+            <p>Monto: ${{ solicitud.cotizacion.monto|separator }} </p>
+            <p>Fecha envio: {{ solicitud.fecha|date:"SHORT_DATE_FORMAT" }}</p>
+            
+            <p>Profesor a cargo: {{ solicitud.visita.profesor }}</p>
+            
+            <p>Visitantes:</p>
+            <ul>
+                {% for visitante in visitantes %}
+                <li>
+                    {{ visitante.nombre }}
+                </li>
+                {%  endfor %}
+            </ul>
+            
+            <p>Comentario: {{ solicitud.descripcion }}</p>
+        
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="1">
+                <button type="submit">Aprobar</button>
+            </form>
+        
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="0">
+                <button type="submit">Rechazar</button>
+            </form>
+        </div>
+    </div>

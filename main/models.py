@@ -49,11 +49,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     rut = models.CharField(max_length=10, primary_key=True)
     telefono = models.CharField(max_length=16)
 
-    is_funcionario = models.BooleanField(default=True)
-    is_ingeniero = models.BooleanField(default=False)
-    is_subdirector = models.BooleanField(default=False)
-    is_director = models.BooleanField(default=False)
-
     def __str__(self):
         return f"{self.first_name}: {self.email} - {self.telefono}"
 
@@ -71,7 +66,7 @@ class Ingeniero(models.Model):
     emplazamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.usuario} es ingeniero en {self.emplezamiento}"
+        return f"{self.usuario} es ingeniero en {self.emplazamiento}"
 
 
 class Director(models.Model):
@@ -79,7 +74,7 @@ class Director(models.Model):
     emplazamiento = models.ForeignKey('Emplazamiento', on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.usuario} es ingeniero en {self.emplezamiento}"
+        return f"{self.usuario} es director en {self.emplazamiento}"
 
 
 class Subdirector(models.Model):
@@ -93,8 +88,18 @@ class Subdirector(models.Model):
 class Solicitud(models.Model):
     id_solicitud = models.AutoField(primary_key=True)
     fecha = models.DateField()
-    estado = models.CharField(max_length=16,
-                              default="Pendiente")  # Rechazado, Pendiente, Revisado, Autorizado, Aprobado, Finalizado
+
+    ESTADO_CHOICES = [
+        (0, 'Rechazada'),
+        (1, 'Aceptada'),
+        (2, 'Requerimientos pendientes'),
+        (3, 'Presupuesto pendiente'),
+        (4, 'Firma pendiente'),
+        (5, 'Orden de compra pendiente')
+    ]
+
+    estado = models.IntegerField(default=2, choices=ESTADO_CHOICES)
+
     descripcion = models.TextField()
     usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE)
     asignatura = models.ForeignKey('Asignatura', on_delete=models.CASCADE)
@@ -106,24 +111,49 @@ class Solicitud(models.Model):
         return f"{self.fecha} - {self.estado} - {self.descripcion} - {self.usuario}"
 
 
+class HistorialEstadoSolicitud(models.Model):
+    ESTADO_DECISION_CHOICES = [
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    ]
+
+    ESTADO_CHOICES = [
+        (0, 'Rechazada'),
+        (1, 'Aceptada'),
+        (2, 'Requerimientos pendientes'),
+        (3, 'Presupuesto pendiente'),
+        (4, 'Firma pendiente'),
+        (5, 'Orden de compra pendiente')
+    ]
+
+    solicitud = models.ForeignKey('Solicitud', on_delete=models.CASCADE, related_name='historial')
+    estado_anterior = models.IntegerField(null=False, blank=False, choices=ESTADO_CHOICES)
+    estado_decision = models.CharField(choices=ESTADO_DECISION_CHOICES, max_length=10)
+
+    def __str__(self):
+        return f"{self.solicitud} - {self.etapa} - {self.estado_decision} en {self.fecha_decision}"
+
+
 class Visita(models.Model):
     id_visita = models.AutoField(primary_key=True)
     nombre_empresa = models.CharField(max_length=64, default='NN')
     fecha = models.DateField()
     lugar = models.CharField(max_length=64)
+    profesor = models.ForeignKey('Profesor', on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.fecha} - {self.lugar}"
 
 
 class Profesor(models.Model):
-    visita = models.ForeignKey('Visita', on_delete=models.CASCADE)
+    id_profesor = models.AutoField(primary_key=True)
     rut = models.CharField(max_length=12)
     nombre = models.CharField(max_length=64)
     email = models.EmailField()
 
     def __str__(self):
         return f"{self.nombre} - {self.rut} - {self.email}"
+
 
 class Cotizacion(models.Model):
     TIPO_CHOICES = [

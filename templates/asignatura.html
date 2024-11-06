@@ -45,7 +45,7 @@
                             $('#id_asignatura').append('<option value="">Seleccione una asignatura</option>');
                             $.each(data.asignaturas, function(index, asignatura){
                                 console.log("Asignatura:", asignatura[0], asignatura[1]);
-                                $('#id_asignatura').append('<option value="'+asignatura[0]+'">'+asignatura[1]+" - " +asignatura[2] +'</option>');
+                                $('#id_asignatura').append('<option value="'+asignatura[0]+'">'+asignatura[2]+" - " +asignatura[1] +'</option>');
                             });
                         }
                     });
