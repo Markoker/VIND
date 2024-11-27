@@ -2,12 +2,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export function selectProfile(){
+export function SelectProfile(){
     return (
         <div>
             <div>
                 <h1>Seleccionar Perfil</h1>
-                <Link to="/dashboard-funcionario">Trabajador</Link>
+                <Link to="/dashboard-funcionario">Funcionario</Link>
             </div>
             <div>
                 <h1>Seleccionar Perfil</h1>
@@ -17,6 +17,6 @@ export function selectProfile(){
                 <h1>Seleccionar Perfil</h1>
                 <Link to="/dashboard-jefe">Jefe</Link>
             </div>
-        </div
+        </div>
     );
 }

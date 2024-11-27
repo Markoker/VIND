@@ -36,6 +36,45 @@ class UsuarioLogin(BaseModel):
     email: str
     password: str
 
+class CrearSolicitudRequest(BaseModel):
+    descripcion: str
+    usuario_rut: str
+    asignatura_id: int
+    visita: dict
+    cotizacion: Optional[dict] = None
+
+
+
+
+@app.post("/solicitudes")
+async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
+    try:
+        # Crear visita
+        visita_id = crear_visita(data.visita)
+
+        # Crear cotización (si aplica)
+        cotizacion_id = crear_cotizacion(data.cotizacion) if data.cotizacion else None
+
+        # Crear solicitud
+        solicitud_data = {
+            "fecha": date.today(),
+            "estado": 2,  # Estado inicial
+            "descripcion": data.descripcion,
+            "usuario_rut": data.usuario_rut,
+            "asignatura_id": data.asignatura_id,
+            "visita_id": visita_id,
+            "cotizacion_id": cotizacion_id,
+        }
+        solicitud_id = crear_solicitud(solicitud_data)
+
+        return {"id_solicitud": solicitud_id, "message": "Solicitud creada exitosamente"}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
 #El status enta en el puerto 8000
 @app.get("/")
 def status():
@@ -112,16 +151,6 @@ async def get_asignatura(id_emplazamiento : int,
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@app.get("/solicitudes/{rut}/{unidad_academica_id}")
-def obtener_solicitudes_por_unidad(rut: str, unidad_academica_id: int):
-    try:
-        solicitudes = getSolicitudesPorUnidad(rut, unidad_academica_id)
-        if solicitudes:
-            return solicitudes
-        raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario en esta unidad académica.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
 # Obtener usuarios
 @app.get("/usuario")
 async def get_usuarios():
@@ -134,6 +163,32 @@ async def get_usuarios():
         raise HTTPException(status_code=404, detail="Usuarios no encontrados.")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    
+@app.get("/solicitudes/{rut}")
+def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
+    try:
+        solicitudes = getSolicitudesPorUnidad(rut, unidad_academica_id)
+        if solicitudes:
+            return solicitudes
+        raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@app.get("/unidades-academicas")
+def obtener_unidades_academicas():
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    cur.execute("SELECT id_unidad, nombre FROM UnidadAcademica ORDER BY nombre;")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [{"id": row[0], "nombre": row[1]} for row in rows]
+
+
 
 @app.get("/usuario/{rut}")
 def obtener_usuario(rut: str):
