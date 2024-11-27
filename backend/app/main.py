@@ -72,11 +72,36 @@ def signup(usuario: UsuarioCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-# Obtener asignatura
-@app.get("/{id_emplazamiento}/{id_unidad_academica}/asignatura")
+# Obtener emplazamientos
+@app.get("/emplazamiento")
+async def get_emplazamientos():
+    try:
+        emplazamientos = getEmplazamientos()
+
+        if emplazamientos:
+            return emplazamientos
+
+        raise HTTPException(status_code=404, detail="Emplazamientos no encontrados.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+# Obtener unidades académicas por emplazamiento
+@app.get("/emplazamiento/{id_emplazamiento}/unidad_academica")
+async def get_unidades_academicas(id_emplazamiento : int):
+    try:
+        unidades_academicas = getUnidadesAcademicas(query_type="by_emplazamiento", id_emplazamiento=id_emplazamiento)
+
+        if unidades_academicas:
+            return unidades_academicas
+
+        raise HTTPException(status_code=404, detail="Unidades académicas no encontradas.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+# Obtener asignaturas por unidad académica
+@app.get("/emplazamiento/{id_emplazamiento}/unidad_academica/{id_unidad_academica}/asignatura")
 async def get_asignatura(id_emplazamiento : int,
-                         id_unidad_academica : int,
-                         id_asignatura : int):
+                         id_unidad_academica : int):
     try:
         asignaturas = getAsignaturas(id_unidad_academica=id_unidad_academica)
 
@@ -87,6 +112,20 @@ async def get_asignatura(id_emplazamiento : int,
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+# Obtener usuarios
+@app.get("/usuario")
+async def get_usuarios():
+    try:
+        usuarios = getUsuarios()
+
+        if usuarios:
+            return usuarios
+
+        raise HTTPException(status_code=404, detail="Usuarios no encontrados.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+'''
 @app.get("/rendiciones/resumen", response_model=DineroResumen)
 def calcular_dinero_resumen():
     print("Endpoint /rendiciones/resumen fue llamado")
@@ -99,7 +138,6 @@ def calcular_dinero_resumen():
         dinero_devuelto=dinero_devuelto,
         dinero_por_devolver=dinero_por_devolver
     )
-'''
 # Crear rendición
 @app.post("/rendiciones")
 async def create_rendicion(

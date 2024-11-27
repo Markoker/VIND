@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from utils import get_connection
+from utils import get_connection, createUser
 import pandas as pd
 
 # Conectar a la base de datos
@@ -57,9 +57,9 @@ def borrar_datos():
     cur.execute("DELETE FROM Colacion")
     cur.execute("DELETE FROM Reembolso")
     cur.execute("DELETE FROM Visitante")
-    cur.execute("DELETE FROM Emplazamiento")
-    cur.execute("DELETE FROM UnidadAcademica")
     cur.execute("DELETE FROM Asignatura")
+    cur.execute("DELETE FROM UnidadAcademica")
+    cur.execute("DELETE FROM Emplazamiento")
     conn.commit()
 
 # Para reinicios de la base de datos sin necesidad de reiniciar contenedores
@@ -88,6 +88,9 @@ def cargar_datos_universidad(archivo):
     print(df.columns)
 
     df = df[df['JORNADA'] == 'DIURNO']
+
+    df['SIGLA'] = df['SIGLA'].str.strip()
+
     campus = df['CAMPUS_SEDE'].unique().tolist()
     departamento = df[['DEPARTAMENTO', 'CAMPUS_SEDE']].drop_duplicates().to_dict('records')
     semestre = df['SEMESTRE'].unique().tolist()
@@ -103,24 +106,40 @@ def cargar_datos_universidad(archivo):
 
     # Insertar datos en la tabla UnidadAcademica
     for d in departamento:
+        presupuesto = random.randint(1_000_000, 10_000_000)
+        gasto = random.randint(1, int(presupuesto * 0.8))
+
         cur.execute(
             "INSERT INTO UnidadAcademica (nombre, presupuesto, gasto, emplazamiento_id) VALUES (%s, %s, %s, (SELECT id_emplazamiento FROM Emplazamiento WHERE nombre = %s)) ON CONFLICT DO NOTHING;",
-            (d['DEPARTAMENTO'], 0, 0, d['CAMPUS_SEDE']))
-
-    # Insertar datos en la tabla Asignatura
-    for a in asignaturas:
-        cur.execute(
-            "INSERT INTO Asignatura (sigla, nombre, semestre, departamento_id, paralelo) VALUES (%s, %s, %s, (SELECT id_unidad_academica FROM UnidadAcademica WHERE nombre = %s), %s) ON CONFLICT DO NOTHING;",
-            (a['SIGLA'], a['ASIGNATURA'], a['SEMESTRE'], a['DEPARTAMENTO'], 0))
+            (d['DEPARTAMENTO'], presupuesto, gasto, d['CAMPUS_SEDE']))
 
     # Insertar datos en la tabla Paralelo
     for p in paralelos:
         cur.execute(
-            "INSERT INTO Asignatura (sigla, nombre, semestre, departamento_id, paralelo) VALUES (%s, %s, %s, (SELECT id_unidad_academica FROM UnidadAcademica WHERE nombre = %s), %s) ON CONFLICT DO NOTHING;",
-            (p['SIGLA'], p['ASIGNATURA'], p['SEMESTRE'], p['DEPARTAMENTO'], p['PARALELO']))
+            "INSERT INTO Asignatura (sigla, nombre, semestre, departamento_id, paralelo) VALUES (%s, %s, %s, (SELECT id_unidad_academica FROM UnidadAcademica WHERE nombre = %s AND emplazamiento_id = (SELECT id_emplazamiento FROM Emplazamiento WHERE nombre = %s)), %s) ON CONFLICT DO NOTHING;",
+            (p['SIGLA'], p['ASIGNATURA'], p['SEMESTRE'], p['DEPARTAMENTO'], p['CAMPUS_SEDE'], p['PARALELO']))
 
     conn.commit()
     print("Datos cargados exitosamente.")
+
+def generar_usuarios():
+    # Generar usuarios
+    for i in range(100):
+        rut = str(random.randint(10000000, 25000000)) + "-" + str(random.randint(0, 9))
+        nombre = random.choice(nombres)
+        apellido = random.choice(apellidos)
+
+        email = f"{nombre}.{apellido}@usm.cl".lower()
+
+        # Check if email already exists
+        cur.execute("SELECT * FROM Usuario WHERE email = %s;", (email,))
+        while cur.fetchone() is not None:
+            email = f"{nombre}.{apellido}{random.randint(1, 100)}@usm.cl".lower()
+            cur.execute("SELECT * FROM Usuario WHERE email = %s;", (email,))
+
+        createUser(rut=rut, email=email, first_name=nombre, last_name=apellido, password="1234")
+
+    print("Usuarios generados exitosamente.")
 
 # Ejecutar los generadores de datos
 if __name__ == "__main__":
@@ -128,7 +147,8 @@ if __name__ == "__main__":
     borrar_datos()
     reiniciar_secuencias()
 
-
+    cargar_datos_universidad('DATA.xlsx')
+    generar_usuarios()
 
     # Confirmar los cambios
     conn.commit()
