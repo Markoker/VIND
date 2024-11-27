@@ -99,7 +99,7 @@ def getAsignaturas(query_type="by_unidad",
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
-
+    
     cur = conn.cursor()
 
     if id_unidad_academica:
@@ -131,3 +131,197 @@ def getUsuarios(query_type="all"):
     cur.close()
     conn.close()
     return rows
+
+def getSolicitudesPorUnidad(usuario_rut, unidad_academica_id):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, a.nombre AS asignatura, v.nombre_empresa AS visita
+        FROM Solicitud s
+        INNER JOIN Asignatura a ON s.asignatura_id = a.id_asignatura
+        INNER JOIN Visita v ON s.visita_id = v.id_visita
+        INNER JOIN Funcionario f ON s.usuario_rut = f.usuario_rut
+        WHERE f.usuario_rut = %s AND f.unidad_academica_id = %s
+        ORDER BY s.fecha DESC;
+    """, (usuario_rut, unidad_academica_id))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "id_solicitud": row[0],
+            "fecha": row[1],
+            "estado": row[2],
+            "descripcion": row[3],
+            "asignatura": row[4],
+            "visita": row[5]
+        }
+        for row in rows
+    ]
+
+
+'''
+
+def getRendicionesParaTrabajador(trabajador_rut):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT r.idRendicion, r.fecha, r.t_subida, r.monto, r.estado, 
+               a.nombre AS actividad_nombre, r.descripcion, r.comentario
+        FROM Rendicion r
+        JOIN Actividad a ON r.a_asignada = a.idActividad
+        WHERE r.t_subida = %s;
+    """, (trabajador_rut,))
+    
+    rendiciones = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rendiciones
+
+
+
+
+# Crear una nueva rendición
+def createRendicion(fecha, t_subida, monto, estado, a_asignada, descripción):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO Rendicion (fecha, t_subida, monto, estado, a_asignada, descripcion) VALUES (%s, %s, %s, %s, %s, %s) RETURNING idRendicion;",
+        (fecha, t_subida, monto, estado, a_asignada, descripción)
+    )
+    conn.commit()
+    new_id = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return new_id
+
+
+def saveDocument(nombre, ruta, rendicion_id):
+# Retorna los usuarios
+def getUsuarios(query_type="all"):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO Docs (nombre, archivo, rendicion) VALUES (%s, %s, %s) RETURNING idDocs;",
+            (nombre, ruta, rendicion_id)
+        )
+        doc_id = cur.fetchone()[0]
+        conn.commit()
+        print(f"Documento guardado en la base de datos con ID: {doc_id}, asociado a rendicion_id: {rendicion_id}")
+        return doc_id
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al guardar el documento: {e}")
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+
+# Actualizar una rendición existente
+def updateRendicion(idRendicion, fecha, T_asignado, monto, estado, A_asignada, Descripción):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE Rendicion SET fecha = %s, T_asignado = %s, monto = %s, estado = %s, A_asignada = %s, Descripción = %s WHERE id = %s;",
+        (fecha, T_asignado, monto, estado, A_asignada, Descripción, idRendicion)
+    )
+    updated_rows = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return updated_rows
+
+# Eliminar una rendición
+def deleteRendicion(idRendicion):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM Rendicion WHERE id = %s;", (idRendicion,))
+    deleted_rows = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return deleted_rows
+
+# Devoluciones
+def getDevoluciones():
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT r.idRendicion, r.fecha, r.t_subida, r.monto, r.estado, a.nombre AS actividad_nombre, t.nombre AS trabajador_nombre, r.descripcion, t.rut
+        FROM Rendicion r
+        JOIN Actividad a ON r.a_asignada = a.idActividad
+        JOIN Trabajador t ON r.t_subida = t.rut
+        WHERE r.estado IN ('Por Devolver', 'Devuelta');
+    """)
+    
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+def updateRendicionEstado(idRendicion, nuevo_estado, comentario, contador_rut):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    if nuevo_estado == "Devuelta":
+        # Actualiza el contador devolutivo al cambiar el estado a "Devuelta"
+        cur.execute(
+            "UPDATE Rendicion SET estado = %s, contador_devolutivo = %s WHERE idRendicion = %s;",
+            (nuevo_estado, contador_rut, idRendicion)
+        )
+    else:
+        # Actualiza el contador resolutivo para otros cambios de estado
+        cur.execute(
+            "UPDATE Rendicion SET estado = %s, comentario = %s, contador_resolutivo = %s WHERE idRendicion = %s;",
+            (nuevo_estado, comentario, contador_rut, idRendicion)
+        )
+
+    updated_rows = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return updated_rows
+
+
+
+def direccionDocumento(documento_id):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    
+    cur = conn.cursor()
+    cur.execute("SELECT archivo FROM Docs WHERE idDocs = %s;", (documento_id,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not result:
+        return None
+    
+    return result[0]

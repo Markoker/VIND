@@ -112,6 +112,16 @@ async def get_asignatura(id_emplazamiento : int,
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+@app.get("/solicitudes/{rut}/{unidad_academica_id}")
+def obtener_solicitudes_por_unidad(rut: str, unidad_academica_id: int):
+    try:
+        solicitudes = getSolicitudesPorUnidad(rut, unidad_academica_id)
+        if solicitudes:
+            return solicitudes
+        raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario en esta unidad académica.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 # Obtener usuarios
 @app.get("/usuario")
 async def get_usuarios():
@@ -138,6 +148,7 @@ def calcular_dinero_resumen():
         dinero_devuelto=dinero_devuelto,
         dinero_por_devolver=dinero_por_devolver
     )
+
 # Crear rendición
 @app.post("/rendiciones")
 async def create_rendicion(
