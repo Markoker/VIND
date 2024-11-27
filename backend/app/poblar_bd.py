@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from utils import get_connection, createUser
+from utils import *
 import pandas as pd
 
 # Conectar a la base de datos
@@ -141,6 +141,45 @@ def generar_usuarios():
 
     print("Usuarios generados exitosamente.")
 
+def generar_roles():
+    usuarios = getUsuarios()
+    unidades = getUnidadesAcademicas()
+    emplazamientos = getEmplazamientos()
+
+    for usuario in usuarios:
+        isFuncionario = random.randint(0, 1)
+        isIngeniero = random.randint(0, 1)
+        isDirector = random.randint(0, 1)
+        isSubdirector = random.randint(0, 1)
+
+        if isFuncionario:
+            cantidad = random.randint(1, 5)
+            for i in range(cantidad):
+                unidad = random.choice(unidades)
+                cur.execute("INSERT INTO Funcionario (usuario_rut, unidad_academica_id) VALUES (%s, %s);", (usuario[0], unidad[0]))
+
+        if isIngeniero:
+            cantidad = random.randint(1, 5)
+            for i in range(cantidad):
+                emplazamiento = random.choice(emplazamientos)
+                cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento[0]))
+
+        if isDirector:
+            cantidad = random.randint(1, 5)
+            for i in range(cantidad):
+                emplazamiento = random.choice(emplazamientos)
+                cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento[0]))
+
+        if isSubdirector:
+            cantidad = random.randint(1, 5)
+            for i in range(cantidad):
+                unidad = random.choice(unidades)
+                cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);", (usuario[0], unidad[0]))
+
+    conn.commit()
+    print("Roles generados exitosamente.")
+
+
 # Ejecutar los generadores de datos
 if __name__ == "__main__":
 
@@ -149,6 +188,7 @@ if __name__ == "__main__":
 
     cargar_datos_universidad('DATA.xlsx')
     generar_usuarios()
+    generar_roles()
 
     # Confirmar los cambios
     conn.commit()

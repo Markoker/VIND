@@ -120,17 +120,91 @@ def getAsignaturas(query_type="by_unidad",
     return rows
 
 # Retorna los usuarios
-def getUsuarios(query_type="all"):
+def getUsuarios(query_type="all", rut=None):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
-    cur.execute("SELECT * FROM Usuario;")
-    rows = cur.fetchall()
+
+    if query_type == "all":
+        cur.execute("SELECT * FROM Usuario;")
+        rows = cur.fetchall()
+    elif query_type == "by_rut":
+        cur.execute("SELECT * FROM Usuario WHERE rut = %s;", (rut,))
+        rows = cur.fetchone()
+    else:
+        raise ValueError("Tipo de consulta no válido")
+
     cur.close()
     conn.close()
     return rows
+
+# Retorna los roles de un usuario
+def getRolesUsuario(rut, query_type="all", rol=None):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    '''
+    Retorna un diccionario con los roles y un booleano que indica si el usuario tiene ese rol
+    '''
+
+    es_funcionario = False
+    es_ingeniero = False
+    es_director = False
+    es_subdirector = False
+
+    if query_type == "all":
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM Funcionario WHERE usuario_rut = %s;", (rut,))
+        print(cur.fetchone())
+        es_funcionario = cur.fetchone() is not None
+
+        cur.execute("SELECT * FROM Ingeniero WHERE usuario_rut = %s;", (rut,))
+        es_ingeniero = cur.fetchone() is not None
+
+        cur.execute("SELECT * FROM Director WHERE usuario_rut = %s;", (rut,))
+        es_director = cur.fetchone() is not None
+
+        cur.execute("SELECT * FROM Subdirector WHERE usuario_rut = %s;", (rut,))
+        es_subdirector = cur.fetchone() is not None
+        cur.close()
+
+    elif query_type == "by_rol":
+        if rol == "funcionario":
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Funcionario WHERE usuario_rut = %s;", (rut,))
+            flag = cur.fetchone() is not None
+        elif rol == "ingeniero":
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Ingeniero WHERE usuario_rut = %s;", (rut,))
+            flag = cur.fetchone() is not None
+        elif rol == "director":
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Director WHERE usuario_rut = %s;", (rut,))
+            flag = cur.fetchone() is not None
+        elif rol == "subdirector":
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Subdirector WHERE usuario_rut = %s;", (rut,))
+            flag = cur.fetchone() is not None
+        else:
+            raise ValueError("Rol no válido")
+
+        cur.close()
+        conn.close()
+
+        return flag
+
+
+    conn.close()
+
+    return {
+        "funcionario": es_funcionario,
+        "ingeniero": es_ingeniero,
+        "director": es_director,
+        "subdirector": es_subdirector
+    }
 
 def getSolicitudesPorUnidad(usuario_rut, unidad_academica_id):
     conn = get_connection()
@@ -166,7 +240,6 @@ def getSolicitudesPorUnidad(usuario_rut, unidad_academica_id):
 
 
 '''
-
 def getRendicionesParaTrabajador(trabajador_rut):
     conn = get_connection()
     if conn is None:
@@ -325,3 +398,4 @@ def direccionDocumento(documento_id):
         return None
     
     return result[0]
+'''

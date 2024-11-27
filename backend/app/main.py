@@ -135,6 +135,36 @@ async def get_usuarios():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+@app.get("/usuario/{rut}")
+def obtener_usuario(rut: str):
+    try:
+        usuario = getUsuarios(query_type="by_rut", rut=rut)
+        if usuario:
+            return usuario
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@app.get("/usuario/{rut}/rol")
+def obtener_usuario(rut: str):
+    try:
+        roles = getRolesUsuario(rut)
+        if roles:
+            return roles
+        raise HTTPException(status_code=404, detail=f"Roles para el usuario con rut {rut} no encontrados.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@app.get("/usuario/{rut}/rol/{rol}")
+def obtener_usuario(rut: str,
+                    rol: str):
+    try:
+        isRol = getRolesUsuario(rut, query_type="by_rol", rol=rol)
+
+        return isRol
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 '''
 @app.get("/rendiciones/resumen", response_model=DineroResumen)
 def calcular_dinero_resumen():
