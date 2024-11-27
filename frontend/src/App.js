@@ -5,6 +5,8 @@ import { Routes, Route } from 'react-router-dom';
 import { Home } from './Pages/Home';
 import { SignUp } from './Pages/Login/Signup';
 import { Login } from './Pages/Login/Login';
+import { Solicitudes } from './Pages/funcionario/verSolicitudes'
+/*
 import { Dashboard } from './Pages/Dashboard';
 import { DashboardContador } from './Pages/contador/Dashboard-contador';
 import { DashboardTrabajador } from './Pages/trabajador/Dashboard-trabajador';
@@ -17,7 +19,7 @@ import { RendicionJefe } from './Pages/jefe/ResumenDinero';
 import { RendicionDetalles } from './Pages/jefe/RendicionDetalles';
 import { RevisarDevolucion } from './Pages/contador/RevisarDevolucion';
 import { Logout } from './Pages/Login/logout';
-
+*/
 
 function App() {
   return (
