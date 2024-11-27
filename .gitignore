@@ -11,3 +11,4 @@ frontend/package-lock.json
 frontend/package-lock.json
 backend/app/__pycache__/main.cpython-312.pyc
 backend/app/__pycache__/utils.cpython-312.pyc
+/.idea

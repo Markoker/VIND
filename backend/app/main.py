@@ -72,6 +72,33 @@ def signup(usuario: UsuarioCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+# Obtener asignatura
+@app.get("/{id_emplazamiento}/{id_unidad_academica}/asignatura")
+async def get_asignatura(id_emplazamiento : int,
+                         id_unidad_academica : int,
+                         id_asignatura : int):
+    try:
+        asignaturas = getAsignaturas(id_unidad_academica=id_unidad_academica)
+
+        if asignaturas:
+            return asignaturas
+
+        raise HTTPException(status_code=404, detail="Asignaturas no encontradas.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@app.get("/rendiciones/resumen", response_model=DineroResumen)
+def calcular_dinero_resumen():
+    print("Endpoint /rendiciones/resumen fue llamado")
+    devoluciones = getDevoluciones()
+    dinero_devuelto = sum([dev[3] for dev in devoluciones if dev[4] == "Devuelta"])
+    dinero_por_devolver = sum([dev[3] for dev in devoluciones if dev[4] == "Por Devolver"])
+
+    # Crear una instancia de DineroResumen
+    return DineroResumen(
+        dinero_devuelto=dinero_devuelto,
+        dinero_por_devolver=dinero_por_devolver
+    )
 '''
 # Crear rendición
 @app.post("/rendiciones")
@@ -91,7 +118,6 @@ async def create_rendicion(
         return {"message": f"Rendición creada con ID {new_id}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 
 # Endpoint para subir archivos
 @app.post("/rendiciones/{rendicion_id}/archivos")

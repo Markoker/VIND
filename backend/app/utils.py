@@ -55,67 +55,29 @@ def createUser(rut, first_name, last_name, email, password):
     return new_rut
 
 # Retorna las rendiciones
-def getRendiciones(query_type="all", rendicion_id=None, estado=None, rol=None):
+def getAsignaturas(query_type="by_unidad",
+                   id_unidad_academica=None,
+                   semestre=None):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
     
     cur = conn.cursor()
-    
-    if query_type == "all":
-        if rol == "jefe":
+
+    if id_unidad_academica:
+        if semestre:
             cur.execute("""
-                SELECT r.idRendicion, r.fecha, r.monto, r.estado, r.descripcion, r.comentario,
-                        a.nombre AS actividad_nombre, t.nombre AS trabajador_nombre, t.rut AS trabajador_rut,
-                        r.contador_resolutivo, r.contador_devolutivo
-                FROM Rendicion r
-                JOIN Actividad a ON r.a_asignada = a.idActividad
-                JOIN Trabajador t ON r.t_subida = t.rut;
-            """)
+                SELECT * FROM Asignatura WHERE departamento_id = %s AND semestre = %s;
+            """, (id_unidad_academica, semestre,))
         else:
             cur.execute("""
-                SELECT r.idRendicion, r.fecha, r.monto, r.estado, r.descripcion, r.comentario,
-                        a.nombre AS actividad_nombre, t.nombre AS trabajador_nombre, t.rut AS trabajador_rut
-                FROM Rendicion r
-                JOIN Actividad a ON r.a_asignada = a.idActividad
-                JOIN Trabajador t ON r.t_subida = t.rut;
-            """)
-    
-    elif query_type == "by_id" and rendicion_id:
-        cur.execute("""
-                SELECT r.idRendicion, r.fecha, r.monto, r.estado, r.descripcion, r.comentario,
-                    a.nombre AS actividad_nombre, t.nombre AS trabajador_nombre, t.rut AS trabajador_rut,
-                    (SELECT nombre FROM Trabajador WHERE rut = r.contador_resolutivo) AS contador_resolutivo_nombre,
-                    (SELECT nombre FROM Trabajador WHERE rut = r.contador_devolutivo) AS contador_devolutivo_nombre
-                FROM Rendicion r
-                JOIN Actividad a ON r.a_asignada = a.idActividad
-                JOIN Trabajador t ON r.t_subida = t.rut
-                WHERE r.idRendicion = %s;
-            """, (rendicion_id,))
-    
-    elif query_type == "detailed":
-        cur.execute("""
-            SELECT r.idRendicion, r.fecha, r.monto, r.estado, r.descripcion, r.comentario,
-                    a.nombre AS actividad_nombre, t.nombre AS trabajador_nombre, t.rut AS trabajador_rut,
-                    r.contador_resolutivo, r.contador_devolutivo
-            FROM Rendicion r
-            JOIN Actividad a ON r.a_asignada = a.idActividad
-            JOIN Trabajador t ON r.t_subida = t.rut;
-        """)
-    
-    elif query_type == "by_estado" and estado:
-        cur.execute("""
-            SELECT r.idRendicion, r.fecha, r.monto, r.estado, r.descripcion, r.comentario,
-                    a.nombre AS actividad_nombre, t.nombre AS trabajador_nombre, t.rut AS trabajador_rut,
-                    r.contador_resolutivo, r.contador_devolutivo
-            FROM Rendicion r
-            JOIN Actividad a ON r.a_asignada = a.idActividad
-            JOIN Trabajador t ON r.t_subida = t.rut
-            WHERE r.estado = %s;
-        """, (estado,))
+                SELECT * FROM Asignatura WHERE departamento_id = %s;
+            """, (id_unidad_academica,))
     else:
-        raise ValueError("Tipo de consulta no válido o ID de rendición no proporcionado.")
-    
+        pass
+
+
+
     rows = cur.fetchall()
     cur.close()
     conn.close()
