@@ -307,29 +307,6 @@ def countAsignaturas(id_unidad_academica=None, semestre=None):
     return count
 
 
-def getParalelosByAsignatura(id_unidad_academica=None, semestre=None, asignatura_nombre=None):
-    conn = get_connection()
-    if conn is None:
-        raise ConnectionError("No se pudo conectar a la base de datos")
-
-    cur = conn.cursor()
-
-    if id_unidad_academica and semestre and asignatura_nombre:
-        cur.execute("""
-            SELECT paralelo
-            FROM Asignatura
-            WHERE departamento_id = %s AND semestre = %s AND nombre = %s;
-        """, (id_unidad_academica, semestre, asignatura_nombre,))
-    else:
-        raise ValueError("Faltan parámetros: id_unidad_academica, semestre, y asignatura_nombre son obligatorios.")
-
-    paralelos = [row[0] for row in cur.fetchall()]
-    cur.close()
-    conn.close()
-
-    return paralelos
-
-
 # Retorna los usuarios
 def getUsuarios(query_type="all", rut=None):
     conn = get_connection()
