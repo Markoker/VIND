@@ -19,7 +19,7 @@ export function DashboardFuncionario() {
                 <Link to="/ver-solicitudes">Ver Solicitudes</Link>
             </div>
             <div>
-                <Link to="/crear-solicitud">Crear Solicitud</Link>
+                <Link to="/crear-solicitud/asignatura">Crear Solicitud</Link>
             </div>
         </div>
     );

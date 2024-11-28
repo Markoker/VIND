@@ -49,6 +49,58 @@ def crear_cotizacion(cotizacion):
         raise ConnectionError("No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
+
+    # Crear registro en tabla Traslado si corresponde
+    traslado_id = None
+    if "traslado" in cotizacion:
+        traslado = cotizacion["traslado"]
+        cur.execute(
+            """
+            INSERT INTO Traslado (nombre_proveedor, rut_proveedor, correo_proveedor, monto, cotizacion_1, cotizacion_2, cotizacion_3)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (
+                traslado["nombre_proveedor"],
+                traslado["rut_proveedor"],
+                traslado["correo_proveedor"],
+                traslado["monto"],
+                traslado.get("cotizacion_1"),
+                traslado.get("cotizacion_2"),
+                traslado.get("cotizacion_3"),
+            ),
+        )
+        traslado_id = cur.fetchone()[0]
+
+    # Crear registro en tabla Colación si corresponde
+    colacion_id = None
+    if "colacion" in cotizacion:
+        colacion = cotizacion["colacion"]
+
+        # Validar monto dividido por asistentes
+        if colacion["monto"] / colacion["asistentes"] > 6000:
+            raise ValueError("El monto por persona en colación no puede superar los 6000.")
+
+        cur.execute(
+            """
+            INSERT INTO Colacion (nombre_proveedor, rut_proveedor, correo_proveedor, monto, tipo_subvencion, cotizacion_1, cotizacion_2, cotizacion_3)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (
+                colacion.get("nombre_proveedor"),
+                colacion.get("rut_proveedor"),
+                colacion.get("correo_proveedor"),
+                colacion["monto"],
+                colacion["tipo_subvencion"],
+                colacion.get("cotizacion_1"),
+                colacion.get("cotizacion_2"),
+                colacion.get("cotizacion_3"),
+            ),
+        )
+        colacion_id = cur.fetchone()[0]
+
+    # Crear la cotización general
     cur.execute(
         """
         INSERT INTO Cotizacion (tipo, estado, monto, traslado_id, colacion_id)
@@ -59,8 +111,8 @@ def crear_cotizacion(cotizacion):
             cotizacion["tipo"],
             "Pendiente",
             cotizacion["monto"],
-            cotizacion.get("traslado_id"),
-            cotizacion.get("colacion_id"),
+            traslado_id,
+            colacion_id,
         ),
     )
     cotizacion_id = cur.fetchone()[0]
@@ -68,6 +120,7 @@ def crear_cotizacion(cotizacion):
     cur.close()
     conn.close()
     return cotizacion_id
+
 
 
 def crear_solicitud(data):
@@ -134,18 +187,20 @@ def createUser(rut, first_name, last_name, email, password):
 
     return new_rut
 
-# Retorna los emplazamientos
 def getEmplazamientos(query_type="all"):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
-    cur.execute("SELECT * FROM Emplazamiento;")
+    cur.execute("SELECT id_emplazamiento, nombre, sigla FROM Emplazamiento;")
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return rows
+
+    # Transformar los resultados en un arreglo de objetos/diccionarios
+    return [{"id": row[0], "nombre": row[1], "sigla": row[2]} for row in rows]
+
 
 # Retorna las unidades académicas
 def getUnidadesAcademicas(query_type="all",
@@ -198,6 +253,82 @@ def getAsignaturas(query_type="by_unidad",
     cur.close()
     conn.close()
     return rows
+
+
+def getAsignaturasConParalelos(query_type="by_unidad",
+                   id_unidad_academica=None,
+                   semestre=None):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    
+    cur = conn.cursor()
+
+    if query_type == "by_unidad":
+        if id_unidad_academica and semestre:
+            cur.execute("""
+                SELECT nombre, ARRAY_AGG(paralelo) AS paralelos
+                FROM Asignatura
+                WHERE departamento_id = %s AND semestre = %s
+                GROUP BY nombre;
+            """, (id_unidad_academica, semestre,))
+        else:
+            raise ValueError("Faltan parámetros: id_unidad_academica y semestre son obligatorios.")
+    else:
+        raise ValueError("Tipo de consulta no válido.")
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    # Devuelve las asignaturas con sus paralelos
+    return [{"nombre": row[0], "paralelos": row[1]} for row in rows]
+
+def countAsignaturas(id_unidad_academica=None, semestre=None):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    
+    cur = conn.cursor()
+
+    if id_unidad_academica and semestre:
+        cur.execute("""
+            SELECT COUNT(DISTINCT nombre) 
+            FROM Asignatura 
+            WHERE departamento_id = %s AND semestre = %s;
+        """, (id_unidad_academica, semestre,))
+    else:
+        raise ValueError("Faltan parámetros: id_unidad_academica y semestre son obligatorios.")
+
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+
+    return count
+
+
+def getParalelosByAsignatura(id_unidad_academica=None, semestre=None, asignatura_nombre=None):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+
+    if id_unidad_academica and semestre and asignatura_nombre:
+        cur.execute("""
+            SELECT paralelo
+            FROM Asignatura
+            WHERE departamento_id = %s AND semestre = %s AND nombre = %s;
+        """, (id_unidad_academica, semestre, asignatura_nombre,))
+    else:
+        raise ValueError("Faltan parámetros: id_unidad_academica, semestre, y asignatura_nombre son obligatorios.")
+
+    paralelos = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+
+    return paralelos
+
 
 # Retorna los usuarios
 def getUsuarios(query_type="all", rut=None):
@@ -331,6 +462,31 @@ def getSolicitudesPorUnidad(usuario_rut, unidad_academica_id):
         }
         for row in rows
     ]
+
+def guardar_visitantes(visita_id, asistentes):
+#asistentes: Lista de diccionarios con los datos de los asistentes.
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    try:
+        cur = conn.cursor()
+        query = """
+        INSERT INTO Visitante (visita_id, nombre, rut, email)
+        VALUES (%s, %s, %s, %s)
+        """
+        for asistente in asistentes:
+            cur.execute(query, (visita_id, asistente["nombre"], asistente["rut"], asistente["email"]))
+
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+
 
 
 '''

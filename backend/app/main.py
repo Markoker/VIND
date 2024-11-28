@@ -52,8 +52,12 @@ async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
         # Crear visita
         visita_id = crear_visita(data.visita)
 
-        # Crear cotización (si aplica)
-        cotizacion_id = crear_cotizacion(data.cotizacion) if data.cotizacion else None
+        # Validar y crear cotización
+        cotizacion_id = None
+        if data.cotizacion:
+            if data.cotizacion["tipo"] == "Solo colacion" and data.cotizacion["monto"] / data.cotizacion["asistentes"] > 6000:
+                raise HTTPException(status_code=400, detail="El monto por persona en colación no puede superar los 6000.")
+            cotizacion_id = crear_cotizacion(data.cotizacion)
 
         # Crear solicitud
         solicitud_data = {
@@ -68,10 +72,16 @@ async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
         solicitud_id = crear_solicitud(solicitud_data)
 
         return {"id_solicitud": solicitud_id, "message": "Solicitud creada exitosamente"}
-
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.post("/visitantes")
+async def guardar_visitantes_endpoint(visita_id: int, asistentes: list):
+    try:
+        guardar_visitantes(visita_id, asistentes)
+        return {"message": "Visitantes almacenados exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al guardar asistentes: {str(e)}")
 
 
 
@@ -116,7 +126,6 @@ def signup(usuario: UsuarioCreate):
 async def get_emplazamientos():
     try:
         emplazamientos = getEmplazamientos()
-
         if emplazamientos:
             return emplazamientos
 
@@ -126,16 +135,50 @@ async def get_emplazamientos():
 
 # Obtener unidades académicas por emplazamiento
 @app.get("/emplazamiento/{id_emplazamiento}/unidad_academica")
-async def get_unidades_academicas(id_emplazamiento : int):
+async def get_unidades_academicas(id_emplazamiento: int):
     try:
+        print(f"Recibiendo unidades académicas para emplazamiento: {id_emplazamiento}")
         unidades_academicas = getUnidadesAcademicas(query_type="by_emplazamiento", id_emplazamiento=id_emplazamiento)
-
+        print("Unidades académicas encontradas:", unidades_academicas)
         if unidades_academicas:
-            return unidades_academicas
-
+            return [{"id": ua[0], "nombre": ua[1]} for ua in unidades_academicas]
         raise HTTPException(status_code=404, detail="Unidades académicas no encontradas.")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        print("Error al obtener unidades académicas:", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/asignaturas_paralelos")
+def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
+    try:
+        print(f"Recibiendo unidad_academica={unidad_academica}, semestre={semestre}")
+        if semestre not in [1, 2]:
+            raise HTTPException(status_code=400, detail="Semestre no válido.")
+
+        asignaturas = getAsignaturasConParalelos(
+            query_type="by_unidad", 
+            id_unidad_academica=unidad_academica, 
+            semestre=semestre,
+        )
+        
+        if not asignaturas:
+            raise HTTPException(status_code=404, detail="No se encontraron asignaturas.")
+        
+        print(f"Asignaturas encontradas para unidad_academica={unidad_academica}, semestre={semestre}: {asignaturas}")
+        return asignaturas
+    except Exception as e:
+        print(f"Error en obtener_asignaturas_paralelos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/asignaturas_max")
+def obtener_max_asignaturas(unidad_academica: int, semestre: int):
+    try:
+        max_asignaturas = countAsignaturas(id_unidad_academica=unidad_academica, semestre=semestre)
+        return {"total_asignaturas": max_asignaturas}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Obtener asignaturas por unidad académica
 @app.get("/emplazamiento/{id_emplazamiento}/unidad_academica/{id_unidad_academica}/asignatura")
@@ -178,15 +221,35 @@ def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
 def obtener_unidades_academicas():
     conn = get_connection()
     if conn is None:
-        raise ConnectionError("No se pudo conectar a la base de datos")
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
-    cur.execute("SELECT id_unidad, nombre FROM UnidadAcademica ORDER BY nombre;")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    try:
+        cur.execute("SELECT id_unidad_academica, nombre FROM UnidadAcademica ORDER BY nombre;")
+        rows = cur.fetchall()
+        return [{"id": row[0], "nombre": row[1]} for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
 
-    return [{"id": row[0], "nombre": row[1]} for row in rows]
+@app.get("/asignaturas")
+def obtener_asignaturas(unidad_academica: int, semestre: int):
+    try:
+        print(f"Unidad Académica: {unidad_academica}, Semestre: {semestre}")
+        rows = getAsignaturas(query_type="by_unidad", id_unidad_academica=unidad_academica, semestre=semestre)
+        print("Resultados obtenidos:", rows)
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No se encontraron asignaturas.")
+
+        return [{"id": row[0], "nombre": row[2]} for row in rows]
+    except Exception as e:
+        print("Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 
