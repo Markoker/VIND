@@ -1,7 +1,10 @@
 import random
 from datetime import datetime
-from utils import *
 import pandas as pd
+
+from utils import *
+import querys.usuario as Usuario
+import querys.emplazamiento as Emplazamiento
 
 # Conectar a la base de datos
 conn = get_connection()
@@ -116,7 +119,7 @@ def cargar_datos_universidad(archivo):
     # Insertar datos en la tabla Paralelo
     for p in paralelos:
         cur.execute(
-            "INSERT INTO Asignatura (sigla, nombre, semestre, departamento_id, paralelo) VALUES (%s, %s, %s, (SELECT id_unidad_academica FROM UnidadAcademica WHERE nombre = %s AND emplazamiento_id = (SELECT id_emplazamiento FROM Emplazamiento WHERE nombre = %s)), %s) ON CONFLICT DO NOTHING;",
+            "INSERT INTO Asignatura (sigla, nombre, semestre, departamento_id, paralelo, anio) VALUES (%s, %s, %s, (SELECT id_unidad_academica FROM UnidadAcademica WHERE nombre = %s AND emplazamiento_id = (SELECT id_emplazamiento FROM Emplazamiento WHERE nombre = %s)), %s, 2024) ON CONFLICT DO NOTHING;",
             (p['SIGLA'], p['ASIGNATURA'], p['SEMESTRE'], p['DEPARTAMENTO'], p['CAMPUS_SEDE'], p['PARALELO']))
 
     conn.commit()
@@ -142,9 +145,9 @@ def generar_usuarios():
     print("Usuarios generados exitosamente.")
 
 def generar_roles():
-    usuarios = getUsuarios()
-    unidades = getUnidadesAcademicas()
-    emplazamientos = getEmplazamientos()
+    usuarios = Usuario.getUsuarios()
+    unidades = Emplazamiento.getUnidadesAcademicas()
+    emplazamientos = Emplazamiento.getEmplazamientos()
 
     for usuario in usuarios:
         isFuncionario = random.randint(0, 1)

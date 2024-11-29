@@ -90,6 +90,7 @@ CREATE TABLE Asignatura (
     semestre INT NOT NULL,
     departamento_id INT NOT NULL,
     paralelo INT NOT NULL,
+    anio INT NOT NULL,
     FOREIGN KEY (departamento_id) REFERENCES UnidadAcademica(id_unidad_academica)
 );
 
@@ -162,11 +163,10 @@ CREATE TABLE Cotizacion (
 -- 11. Solicitud
 CREATE TABLE Solicitud (
     id_solicitud SERIAL PRIMARY KEY,
-    fecha DATE NOT NULL,
+    fecha DATE NOT NULL DEFAULT CURRENT_DATE,
     estado INT DEFAULT 2 CHECK (estado BETWEEN 0 AND 5),
     descripcion TEXT NOT NULL,
     usuario_rut CHAR(10) NOT NULL,
-    asignatura_id INT NOT NULL,
     visita_id INT NOT NULL,
     cotizacion_id INT,
     FOREIGN KEY (usuario_rut) REFERENCES Usuario(rut),

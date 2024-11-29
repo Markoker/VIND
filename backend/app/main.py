@@ -1,11 +1,18 @@
 from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from utils import *
 from pydantic import BaseModel
 from datetime import date, datetime
 from typing import Optional, List
 import os
+
+from utils import *
+import querys.cotizacion as Cotizacion
+import querys.emplazamiento as Emplazamiento
+import querys.solicitud as Solicitud
+import querys.visita as Visita
+import querys.usuario as Usuario
+import querys.asignatura as Asignatura
 
 app = FastAPI()
 
@@ -50,14 +57,14 @@ class CrearSolicitudRequest(BaseModel):
 async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
     try:
         # Crear visita
-        visita_id = crear_visita(data.visita)
+        visita_id = Visita.Save(data.visita)
 
         # Validar y crear cotización
         cotizacion_id = None
         if data.cotizacion:
             if data.cotizacion["tipo"] == "Solo colacion" and data.cotizacion["monto"] / data.cotizacion["asistentes"] > 6000:
                 raise HTTPException(status_code=400, detail="El monto por persona en colación no puede superar los 6000.")
-            cotizacion_id = crear_cotizacion(data.cotizacion)
+            cotizacion_id = Cotizacion.Save(data.cotizacion)
 
         # Crear solicitud
         solicitud_data = {
@@ -69,7 +76,7 @@ async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
             "visita_id": visita_id,
             "cotizacion_id": cotizacion_id,
         }
-        solicitud_id = crear_solicitud(solicitud_data)
+        solicitud_id = Solicitud.Save(solicitud_data)
 
         return {"id_solicitud": solicitud_id, "message": "Solicitud creada exitosamente"}
     except Exception as e:
@@ -78,7 +85,7 @@ async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
 @app.post("/visitantes")
 async def guardar_visitantes_endpoint(visita_id: int, asistentes: list):
     try:
-        guardar_visitantes(visita_id, asistentes)
+        Visita.SaveVisitanteList(visita_id, asistentes)
         return {"message": "Visitantes almacenados exitosamente"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al guardar asistentes: {str(e)}")
@@ -93,7 +100,7 @@ def status():
 # Login
 @app.post("/login")
 def nuevo_login(usuario: UsuarioLogin):
-    rows = login(usuario.email, usuario.password)
+    rows = usuario.login(usuario.email, usuario.password)
     print(rows)
     if len(rows) == 0:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
@@ -110,7 +117,7 @@ def nuevo_login(usuario: UsuarioLogin):
 @app.post("/signup")
 def signup(usuario: UsuarioCreate):
     try:
-        nuevo_usuario = createUser(
+        nuevo_usuario = usuario.createUser(
             rut = usuario.rut,
             first_name = usuario.first_name,
             last_name = usuario.last_name,
@@ -125,7 +132,7 @@ def signup(usuario: UsuarioCreate):
 @app.get("/emplazamiento")
 async def get_emplazamientos():
     try:
-        emplazamientos = getEmplazamientos()
+        emplazamientos = Emplazamiento.getEmplazamientos()
         if emplazamientos:
             return emplazamientos
 
@@ -138,7 +145,7 @@ async def get_emplazamientos():
 async def get_unidades_academicas(id_emplazamiento: int):
     try:
         print(f"Recibiendo unidades académicas para emplazamiento: {id_emplazamiento}")
-        unidades_academicas = getUnidadesAcademicas(query_type="by_emplazamiento", id_emplazamiento=id_emplazamiento)
+        unidades_academicas = Emplazamiento.getUnidadesAcademicas(query_type="by_emplazamiento", id_emplazamiento=id_emplazamiento)
         print("Unidades académicas encontradas:", unidades_academicas)
         if unidades_academicas:
             return [{"id": ua[0], "nombre": ua[1]} for ua in unidades_academicas]
@@ -151,7 +158,7 @@ async def get_unidades_academicas(id_emplazamiento: int):
 @app.get("/solicitudes/{rut}")
 def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
     try:
-        solicitudes = getSolicitudesPorUnidad(rut, unidad_academica_id)
+        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id)
         if solicitudes:
             return solicitudes
         raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
@@ -182,7 +189,7 @@ def obtener_unidades_academicas():
 @app.get("/usuario")
 async def get_usuarios():
     try:
-        usuarios = getUsuarios()
+        usuarios = Usuario.getUsuarios()
 
         if usuarios:
             return usuarios
@@ -195,7 +202,7 @@ async def get_usuarios():
 @app.get("/usuario/{rut}")
 def obtener_usuario(rut: str):
     try:
-        usuario = getUsuarios(query_type="by_rut", rut=rut)
+        usuario = Usuario.getUsuarios(query_type="by_rut", rut=rut)
         if usuario:
             return usuario
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -205,7 +212,7 @@ def obtener_usuario(rut: str):
 @app.get("/usuario/{rut}/rol")
 def obtener_usuario(rut: str):
     try:
-        roles = getRolesUsuario(rut)
+        roles = Usuario.getRolesUsuario(rut)
         if roles:
             return roles
         raise HTTPException(status_code=404, detail=f"Roles para el usuario con rut {rut} no encontrados.")
@@ -216,7 +223,7 @@ def obtener_usuario(rut: str):
 def obtener_usuario(rut: str,
                     rol: str):
     try:
-        isRol = getRolesUsuario(rut, query_type="by_rol", rol=rol)
+        isRol = Usuario.getRolesUsuario(rut, query_type="by_rol", rol=rol)
 
         return isRol
     except Exception as e:
@@ -226,7 +233,7 @@ def obtener_usuario(rut: str,
 @app.get("/usuario/{rut}/rol/{rol}/emplazamiento")
 def obtenerEmplazamientosPorRol(rut: str, rol: str):
     try:
-        rows = getRolEmplacements(rut, rol)
+        rows = Usuario.getRolEmplacements(rut, rol)
 
         if not rows:
             raise HTTPException(status_code=404,
@@ -239,7 +246,7 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str):
 @app.get("/usuario/{rut}/rol/{rol}/emplazamiento/{emplazamiento_id}/unidad-academica")
 def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
     try:
-        rows = getRolDeptos(rut, rol, emplazamiento_id)
+        rows = Usuario.getRolDeptos(rut, rol, emplazamiento_id)
 
         if not rows:
             raise HTTPException(status_code=404,
@@ -254,7 +261,7 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
 def obtener_asignaturas(unidad_academica: int, semestre: int):
     try:
         print(f"Unidad Académica: {unidad_academica}, Semestre: {semestre}")
-        rows = getAsignaturas(query_type="by_unidad", id_unidad_academica=unidad_academica, semestre=semestre)
+        rows = Asignatura.Get(query_type="by_unidad", id_unidad_academica=unidad_academica, semestre=semestre)
         print("Resultados obtenidos:", rows)
 
         if not rows:
@@ -273,7 +280,7 @@ def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
         if semestre not in [1, 2]:
             raise HTTPException(status_code=400, detail="Semestre no válido.")
 
-        asignaturas = getAsignaturasConParalelos(
+        asignaturas = Asignatura.GetConParalelos(
             query_type="by_unidad",
             id_unidad_academica=unidad_academica,
             semestre=semestre,
@@ -292,7 +299,7 @@ def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
 @app.get("/asignaturas_max")
 def obtener_max_asignaturas(unidad_academica: int, semestre: int):
     try:
-        max_asignaturas = countAsignaturas(id_unidad_academica=unidad_academica, semestre=semestre)
+        max_asignaturas = Asignatura.Count(id_unidad_academica=unidad_academica, semestre=semestre)
         return {"total_asignaturas": max_asignaturas}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -303,7 +310,7 @@ def obtener_max_asignaturas(unidad_academica: int, semestre: int):
 async def get_asignatura(id_emplazamiento: int,
                          id_unidad_academica: int):
     try:
-        asignaturas = getAsignaturas(id_unidad_academica=id_unidad_academica)
+        asignaturas = Asignatura.Get(id_unidad_academica=id_unidad_academica)
 
         if asignaturas:
             return asignaturas

@@ -31,11 +31,9 @@ export function ListadoAsistentes() {
         const visitaId = location.state.visita_id; // Obtener el ID de la visita desde el estado
 
         try {
-            // Enviar los asistentes al backend
-            await axios.post("http://localhost:8000/visitantes", {
-                visita_id: visitaId,
-                asistentes,
-            });
+            /*
+            GUARDAR EN LOCAL
+            */
 
             // Navegar al siguiente paso
             navigate("/crear-solicitud/cotizacion", {
