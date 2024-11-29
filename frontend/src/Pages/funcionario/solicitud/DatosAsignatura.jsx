@@ -8,14 +8,17 @@ export function DatosAsignatura() {
     const [selectedCampus, setSelectedCampus] = useState("");
     const [selectedUnidad, setSelectedUnidad] = useState("");
     const [semestre, setSemestre] = useState("");
+    const [minAsignaturas, setMinAsignaturas] = useState(0);
     const [maxAsignaturas, setMaxAsignaturas] = useState(0);
     const [numAsignaturas, setNumAsignaturas] = useState(0);
     const [asignaturasSeleccionadas, setAsignaturasSeleccionadas] = useState([]);
 
+    const rut = localStorage.getItem("userRut");
+
     useEffect(() => {
         // Cargar los campus al inicio
         axios
-            .get("http://localhost:8000/emplazamiento")
+            .get(`http://localhost:8000/usuario/${rut}/rol/funcionario/emplazamiento`)
             .then((res) => setCampus(res.data))
             .catch((err) => console.error("Error al obtener los campus:", err));
     }, []);
@@ -23,7 +26,7 @@ export function DatosAsignatura() {
     const handleUnidadChange = (campusId) => {
         setSelectedCampus(campusId);
         axios
-            .get(`http://localhost:8000/emplazamiento/${campusId}/unidad_academica`)
+            .get(`http://localhost:8000/usuario/${rut}/rol/funcionario/emplazamiento/${campusId}/unidad-academica`)
             .then((res) => setUnidadAcademica(res.data))
             .catch((err) => console.error("Error al obtener unidades académicas:", err));
     };
@@ -36,6 +39,13 @@ export function DatosAsignatura() {
                     console.log("Asignaturas obtenidas:", res.data);
                     setAsignaturas(res.data);
                     setMaxAsignaturas(res.data.length);
+
+                    if (res.data.length < 1) {
+                        setMinAsignaturas(0);
+                    } else {
+                        setMinAsignaturas(1);
+                        setNumAsignaturas(1)
+                    }
                 })
                 .catch((err) => {
                     console.error("Error al obtener asignaturas:", err.response?.data || err.message);
@@ -104,9 +114,9 @@ export function DatosAsignatura() {
                             Número de paralelos (máx: {asignaturasSeleccionadas[index].paralelos.length}):
                             <input
                                 type="number"
-                                min="0"
+                                min="1"
                                 max={asignaturasSeleccionadas[index].paralelos.length}
-                                value={asignaturasSeleccionadas[index]?.numParalelos || 0}
+                                value={asignaturasSeleccionadas[index]?.numParalelos || 1}
                                 onChange={(e) => handleNumParalelosChange(index, Number(e.target.value))}
                             />
                         </label>
@@ -182,7 +192,7 @@ export function DatosAsignatura() {
                 Número de asignaturas:
                 <input
                     type="number"
-                    min="0"
+                    min={minAsignaturas}
                     max={maxAsignaturas}
                     value={numAsignaturas}
                     onChange={(e) => {

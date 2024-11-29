@@ -32,21 +32,11 @@ export function Login() {
       if (rut) {
         // Guarda el RUT en localStorage si está disponible
         localStorage.setItem("userRut", rut);
-        localStorage.setItem("userRole", data.rol);  // Si también necesitas el rol
         alert(`Bienvenido, ${data.message}`);
       } else {
           throw new Error("RUT no encontrado en la respuesta del servidor.");
       } // Muestra un mensaje de alerta
-      console.log(data); // Maneja la respuesta de éxito según sea necesario
-      console.log(data.rol);
-      localStorage.setItem('userRole', data.rol); // Almacena el rol del usuario en el almacenamiento local
-      if (data.rol === 'trabajador') { // Dependiendo del rol del usuario, redirige a la página correspondiente
-        navigate('/dashboard-trabajador');
-      } else if (data.rol === 'contador') {
-        navigate('/dashboard-contador');
-      } else {
-        navigate('/dashboard-jefe');
-      }
+      navigate('/home'); // Redirige al usuario a la página de selección de perfil
     } catch (err) {
       setError(err.message); // Captura cualquier error y establece el estado de error
     }

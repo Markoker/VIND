@@ -34,15 +34,16 @@ import { Logout } from './Pages/Login/logout';
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<SelectProfile />} />
+      <Route path="/" element={<Home/>} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/home" element={<SelectProfile />} />
 
       <Route
         path="/dashboard-funcionario"
         element={
-          <PrivateRoute allowedRoles={["trabajador"]}>
+          <PrivateRoute allowedRoles={["funcionario"]}>
             <DashboardFuncionario />
           </PrivateRoute>
         }

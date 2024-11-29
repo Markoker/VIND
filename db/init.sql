@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS Visitante CASCADE;
 DROP TABLE IF EXISTS Emplazamiento CASCADE;
 DROP TABLE IF EXISTS UnidadAcademica CASCADE;
 DROP TABLE IF EXISTS Asignatura CASCADE;
+DROP TABLE IF EXISTS AsignaturaSolicitud CASCADE;
 
 -- 1. Usuario
 CREATE TABLE Usuario (
@@ -169,10 +170,18 @@ CREATE TABLE Solicitud (
     visita_id INT NOT NULL,
     cotizacion_id INT,
     FOREIGN KEY (usuario_rut) REFERENCES Usuario(rut),
-    FOREIGN KEY (asignatura_id) REFERENCES Asignatura(id_asignatura),
     FOREIGN KEY (visita_id) REFERENCES Visita(id_visita),
     FOREIGN KEY (cotizacion_id) REFERENCES Cotizacion(id_cotizacion)
 );
+
+CREATE TABLE AsignaturaSolicitud (
+    id SERIAL PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    asignatura_id INT NOT NULL,
+    FOREIGN KEY (solicitud_id) REFERENCES Solicitud(id_solicitud),
+    FOREIGN KEY (asignatura_id) REFERENCES Asignatura(id_asignatura)
+);
+
 
 -- 12. HistorialEstadoSolicitud
 CREATE TABLE HistorialEstadoSolicitud (
@@ -197,3 +206,4 @@ CREATE TABLE Visitante (
     email VARCHAR(254) NOT NULL,
     FOREIGN KEY (visita_id) REFERENCES Visita(id_visita)
 );
+

@@ -147,65 +147,6 @@ async def get_unidades_academicas(id_emplazamiento: int):
         print("Error al obtener unidades académicas:", e)
         raise HTTPException(status_code=400, detail=str(e))
 
-
-@app.get("/asignaturas_paralelos")
-def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
-    try:
-        print(f"Recibiendo unidad_academica={unidad_academica}, semestre={semestre}")
-        if semestre not in [1, 2]:
-            raise HTTPException(status_code=400, detail="Semestre no válido.")
-
-        asignaturas = getAsignaturasConParalelos(
-            query_type="by_unidad", 
-            id_unidad_academica=unidad_academica, 
-            semestre=semestre,
-        )
-        
-        if not asignaturas:
-            raise HTTPException(status_code=404, detail="No se encontraron asignaturas.")
-        
-        print(f"Asignaturas encontradas para unidad_academica={unidad_academica}, semestre={semestre}: {asignaturas}")
-        return asignaturas
-    except Exception as e:
-        print(f"Error en obtener_asignaturas_paralelos: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/asignaturas_max")
-def obtener_max_asignaturas(unidad_academica: int, semestre: int):
-    try:
-        max_asignaturas = countAsignaturas(id_unidad_academica=unidad_academica, semestre=semestre)
-        return {"total_asignaturas": max_asignaturas}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Obtener asignaturas por unidad académica
-@app.get("/emplazamiento/{id_emplazamiento}/unidad_academica/{id_unidad_academica}/asignatura")
-async def get_asignatura(id_emplazamiento : int,
-                         id_unidad_academica : int):
-    try:
-        asignaturas = getAsignaturas(id_unidad_academica=id_unidad_academica)
-
-        if asignaturas:
-            return asignaturas
-
-        raise HTTPException(status_code=404, detail="Asignaturas no encontradas.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-# Obtener usuarios
-@app.get("/usuario")
-async def get_usuarios():
-    try:
-        usuarios = getUsuarios()
-
-        if usuarios:
-            return usuarios
-
-        raise HTTPException(status_code=404, detail="Usuarios no encontrados.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
     
 @app.get("/solicitudes/{rut}")
 def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
@@ -234,23 +175,21 @@ def obtener_unidades_academicas():
         cur.close()
         conn.close()
 
-@app.get("/asignaturas")
-def obtener_asignaturas(unidad_academica: int, semestre: int):
+
+
+
+# Obtener usuarios
+@app.get("/usuario")
+async def get_usuarios():
     try:
-        print(f"Unidad Académica: {unidad_academica}, Semestre: {semestre}")
-        rows = getAsignaturas(query_type="by_unidad", id_unidad_academica=unidad_academica, semestre=semestre)
-        print("Resultados obtenidos:", rows)
+        usuarios = getUsuarios()
 
-        if not rows:
-            raise HTTPException(status_code=404, detail="No se encontraron asignaturas.")
+        if usuarios:
+            return usuarios
 
-        return [{"id": row[0], "nombre": row[2]} for row in rows]
+        raise HTTPException(status_code=404, detail="Usuarios no encontrados.")
     except Exception as e:
-        print("Error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/usuario/{rut}")
@@ -282,6 +221,98 @@ def obtener_usuario(rut: str,
         return isRol
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.get("/usuario/{rut}/rol/{rol}/emplazamiento")
+def obtenerEmplazamientosPorRol(rut: str, rol: str):
+    try:
+        rows = getRolEmplacements(rut, rol)
+
+        if not rows:
+            raise HTTPException(status_code=404,
+                                detail=f"No se encontraron emplazamientos para el usuario {rut} con rol {rol}")
+
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@app.get("/usuario/{rut}/rol/{rol}/emplazamiento/{emplazamiento_id}/unidad-academica")
+def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
+    try:
+        rows = getRolDeptos(rut, rol, emplazamiento_id)
+
+        if not rows:
+            raise HTTPException(status_code=404,
+                                detail=f"No se encontraron emplazamientos para el usuario {rut} con rol {rol}")
+
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.get("/asignaturas")
+def obtener_asignaturas(unidad_academica: int, semestre: int):
+    try:
+        print(f"Unidad Académica: {unidad_academica}, Semestre: {semestre}")
+        rows = getAsignaturas(query_type="by_unidad", id_unidad_academica=unidad_academica, semestre=semestre)
+        print("Resultados obtenidos:", rows)
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No se encontraron asignaturas.")
+
+        return [{"id": row[0], "nombre": row[2]} for row in rows]
+    except Exception as e:
+        print("Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/asignaturas_paralelos")
+def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
+    try:
+        print(f"Recibiendo unidad_academica={unidad_academica}, semestre={semestre}")
+        if semestre not in [1, 2]:
+            raise HTTPException(status_code=400, detail="Semestre no válido.")
+
+        asignaturas = getAsignaturasConParalelos(
+            query_type="by_unidad",
+            id_unidad_academica=unidad_academica,
+            semestre=semestre,
+        )
+
+        if not asignaturas:
+            raise HTTPException(status_code=404, detail="No se encontraron asignaturas.")
+
+        print(f"Asignaturas encontradas para unidad_academica={unidad_academica}, semestre={semestre}: {asignaturas}")
+        return asignaturas
+    except Exception as e:
+        print(f"Error en obtener_asignaturas_paralelos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/asignaturas_max")
+def obtener_max_asignaturas(unidad_academica: int, semestre: int):
+    try:
+        max_asignaturas = countAsignaturas(id_unidad_academica=unidad_academica, semestre=semestre)
+        return {"total_asignaturas": max_asignaturas}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Obtener asignaturas por unidad académica
+@app.get("/emplazamiento/{id_emplazamiento}/unidad_academica/{id_unidad_academica}/asignatura")
+async def get_asignatura(id_emplazamiento: int,
+                         id_unidad_academica: int):
+    try:
+        asignaturas = getAsignaturas(id_unidad_academica=id_unidad_academica)
+
+        if asignaturas:
+            return asignaturas
+
+        raise HTTPException(status_code=404, detail="Asignaturas no encontradas.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 
 '''
 @app.get("/rendiciones/resumen", response_model=DineroResumen)

@@ -162,13 +162,13 @@ def generar_roles():
             cantidad = random.randint(1, 5)
             for i in range(cantidad):
                 emplazamiento = random.choice(emplazamientos)
-                cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento[0]))
+                cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento['id']))
 
         if isDirector:
             cantidad = random.randint(1, 5)
             for i in range(cantidad):
                 emplazamiento = random.choice(emplazamientos)
-                cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento[0]))
+                cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento['id']))
 
         if isSubdirector:
             cantidad = random.randint(1, 5)
