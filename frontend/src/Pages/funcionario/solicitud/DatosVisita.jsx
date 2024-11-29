@@ -1,12 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
 export function DatosVisita() {
-    const [visita, setVisita] = useState({ nombre_empresa: "", fecha: "", lugar: "", profesor_id: "" });
+    const [visita, setVisita] = useState({
+        nombre_empresa: "",
+        fecha: "",
+        lugar: "",
+        profesor_id: "",
+        descripcion: "",
+    });
     const navigate = useNavigate();
     const location = useLocation();
-
     const handleNext = () => {
+        localStorage.setItem("datosVisita", JSON.stringify(visita));
         navigate("/crear-solicitud/asistentes", { state: { ...location.state, visita } });
     };
 
@@ -36,6 +43,13 @@ export function DatosVisita() {
                 placeholder="RUT Profesor"
                 value={visita.profesor_id}
                 onChange={(e) => setVisita({ ...visita, profesor_id: e.target.value })}
+            />
+            <input
+                placeholder="Descripcion"
+                value={visita.descripcion}
+                onChange={(e) => setVisita({ ...visita, descripcion: e.target.value })}
+                rows="4"
+                cols="50"
             />
             <button onClick={handleNext}>Siguiente</button>
         </div>

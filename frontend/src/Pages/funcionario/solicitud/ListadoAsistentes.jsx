@@ -4,49 +4,33 @@ import readXlsxFile from "read-excel-file";
 import axios from "axios";
 
 export function ListadoAsistentes() {
-    const [asistentes, setAsistentes] = useState([]); // Guarda el listado completo
-    const [totalAsistentes, setTotalAsistentes] = useState(0); // Total de asistentes
+    const [asistentes, setAsistentes] = useState([]); 
+    const [totalAsistentes, setTotalAsistentes] = useState(0); 
     const navigate = useNavigate();
     const location = useLocation();
 
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
         readXlsxFile(file).then((rows) => {
             if (rows.length > 0) {
-                const [header, ...data] = rows; // Separar cabecera y filas
+                const [header, ...data] = rows;
                 const asistentesProcesados = data.map((row) => ({
-                    nombre: row[0], // Suponiendo que la primera columna es el nombre
-                    rut: row[1],    // Suponiendo que la segunda columna es el RUT
-                    email: row[2],  // Suponiendo que la tercera columna es el email
+                    nombre: row[0],
+                    rut: row[1],
+                    email: row[2],
                 }));
                 setAsistentes(asistentesProcesados); // Guardar el listado completo
                 setTotalAsistentes(asistentesProcesados.length); // Total de filas válidas
+                localStorage.setItem("totalAsistentes", asistentesProcesados.length);
             }
         });
     };
-
-    const handleNext = async () => {
-        const visitaId = location.state.visita_id; // Obtener el ID de la visita desde el estado
-
-        try {
-            // Enviar los asistentes al backend
-            await axios.post("http://localhost:8000/visitantes", {
-                visita_id: visitaId,
-                asistentes,
-            });
-
-            // Navegar al siguiente paso
-            navigate("/crear-solicitud/cotizacion", {
-                state: { ...location.state, totalAsistentes },
-            });
-        } catch (error) {
-            console.error("Error al guardar asistentes:", error);
-            alert("Hubo un error al guardar los asistentes. Por favor, intente de nuevo.");
-        }
+    const handleNext = () => {
+        navigate("/crear-solicitud/cotizacion", {
+            state: { ...location.state, asistentes, totalAsistentes },
+        });
     };
-
     return (
         <div>
             <h1>Listado de Asistentes</h1>
