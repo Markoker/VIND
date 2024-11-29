@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
 export function TipoCotizacion() {
     const [cotizacion, setCotizacion] = useState({
@@ -30,22 +31,38 @@ export function TipoCotizacion() {
         }
     };
 
-    const handleNext = () => {
-        navigate("/crear-solicitud/resumen", { state: { ...location.state, cotizacion } });
+    const handleNext = async () => {
+        try {
+            const datosVisita = JSON.parse(localStorage.getItem("datosVisita")) || location.state?.visita || {};
+            const datosAsignaturas = JSON.parse(localStorage.getItem("asignaturasSeleccionadas")) || location.state?.asignaturas || [];
+            const listadoAsistentes = JSON.parse(localStorage.getItem("listadoAsistentes")) || location.state?.asistentes || [];
+
+            const solicitud = {
+                visita: datosVisita,
+                asignaturas: datosAsignaturas,
+                asistentes: listadoAsistentes,
+                cotizacion,
+            };
+
+            await axios.post("http://localhost:8000/solicitudes", solicitud);
+            alert("La solicitud fue enviada");
+            navigate("/dashboard-funcionario");
+        } catch (error) {
+            console.error("Error al enviar la solicitud:", error);
+            alert("Hubo un error al enviar la solicitud. Por favor, inténtelo de nuevo.");
+        }
     };
 
     const handleMontoColacionChange = (e) => {
         const montoColacion = e.target.value;
-        setError(""); // Clear previous error
+        setError("");
         setCotizacion({ ...cotizacion, montoColacion });
-
-        // Validate if the amount per attendee exceeds 6000
         const montoPorPersona = montoColacion / totalAsistentes;
         if (montoPorPersona > 6000) {
         setError("El monto por persona no puede superar los 6000.");
         }
     };
-
+    
     return (
         <div>
         <h1>Tipo de Cotización</h1>
@@ -226,8 +243,8 @@ export function TipoCotizacion() {
             </div>
         )}
         <button onClick={handleNext} disabled={error !== ""}>
-            Siguiente
+            Enviar
         </button>
         </div>
     );
-    }
+}

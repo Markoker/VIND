@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate} from "react-router-dom";
 import axios from "axios";
 
 export function DatosAsignatura() {
@@ -12,6 +13,7 @@ export function DatosAsignatura() {
     const [maxAsignaturas, setMaxAsignaturas] = useState(0);
     const [numAsignaturas, setNumAsignaturas] = useState(0);
     const [asignaturasSeleccionadas, setAsignaturasSeleccionadas] = useState([]);
+    const navigate = useNavigate();
 
     const rut = localStorage.getItem("userRut");
 
@@ -69,6 +71,7 @@ export function DatosAsignatura() {
         }
 
         setAsignaturasSeleccionadas(nuevasAsignaturas);
+        localStorage.setItem("asignaturasSeleccionadas", JSON.stringify(nuevasAsignaturas));
     };
     const handleNumParalelosChange = (index, numParalelos) => {
         const nuevasAsignaturas = [...asignaturasSeleccionadas];
@@ -78,12 +81,14 @@ export function DatosAsignatura() {
             paralelosSeleccionados: new Array(numParalelos).fill(""),
         };
         setAsignaturasSeleccionadas(nuevasAsignaturas);
+        localStorage.setItem("asignaturasSeleccionadas", JSON.stringify(nuevasAsignaturas));
     };
     
     const handleParaleloSeleccionadoChange = (asignaturaIndex, paraleloIndex, paraleloValue) => {
         const nuevasAsignaturas = [...asignaturasSeleccionadas];
         nuevasAsignaturas[asignaturaIndex].paralelosSeleccionados[paraleloIndex] = paraleloValue;
         setAsignaturasSeleccionadas(nuevasAsignaturas);
+        localStorage.setItem("asignaturasSeleccionadas", JSON.stringify(nuevasAsignaturas));
     };
     
     const getParalelosDisponibles = (asignaturaIndex, paraleloIndex) => {
@@ -92,6 +97,15 @@ export function DatosAsignatura() {
             (p) => !seleccionados.includes(p) || seleccionados[paraleloIndex] === p // Permitir el actual
         ) || [];
     };
+
+    const handleEnviarDatos = () => {
+        const datosAsignaturas = JSON.parse(localStorage.getItem("asignaturasSeleccionadas"));
+        if(!datosAsignaturas || datosAsignaturas.length === 0){
+            alert("No hay datos de asignaturas seleccionados para enviar.");
+            return;
+        }
+        navigate("/crear-solicitud/visita", { state: { asignaturas: datosAsignaturas } });
+    }
     
     const renderAsignaturas = () => {
         return Array.from({ length: numAsignaturas }, (_, index) => (
@@ -205,6 +219,7 @@ export function DatosAsignatura() {
 
             {/* Renderizado dinámico de asignaturas */}
             {renderAsignaturas()}
+            <button onClick={handleEnviarDatos}>Siguiente</button>
         </div>
     );
 }
