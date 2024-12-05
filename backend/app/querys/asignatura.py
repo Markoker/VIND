@@ -1,4 +1,4 @@
-from ..utils import *
+from querys.utils import *
 
 
 # Retorna las asignaturas

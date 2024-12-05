@@ -13,19 +13,36 @@ export function ListadoAsistentes() {
         const file = event.target.files[0];
         if (!file) return;
         readXlsxFile(file).then((rows) => {
-            if (rows.length > 0) {
-                const [header, ...data] = rows;
-                const asistentesProcesados = data.map((row) => ({
-                    nombre: row[0],
-                    rut: row[1],
-                    email: row[2],
-                }));
-                setAsistentes(asistentesProcesados); // Guardar el listado completo
-                setTotalAsistentes(asistentesProcesados.length); // Total de filas válidas
-                localStorage.setItem("totalAsistentes", asistentesProcesados.length);
+            if (rows.length <= 0) {
+                alert("Ingrese un archivo valido");
             }
+
+            let [header, ...data] = rows;
+
+            if (JSON.stringify(data[7]) !== JSON.stringify(["N°","ROL USM","DV","RUT","DV","Ap.Paterno","Ap.Materno","Nombres","VTR","Carrera","Correo"])) {
+                alert("El archivo no tiene el formato correcto");
+                return;
+            }
+
+            // Eliminar las 7 primeras filas
+            data = data.slice(8);
+
+            const asistentesProcesados = data.map((row) => ({
+                rol: row[1] + "-" + row[2],
+                rut: row[3] + "-" + row[4],
+                nombre: row[7] + " " + row[5] + " " + row[6],
+                carrera: row[9],
+                correo: row[10],
+                VTR: row[8],
+            }));
+
+            console.log(asistentesProcesados);
+
+            setAsistentes(asistentesProcesados); // Guardar el listado completo
+            setTotalAsistentes(asistentesProcesados.length); // Total de filas válidas
+            localStorage.setItem("totalAsistentes", asistentesProcesados.length);
         });
-    };
+        };
     const handleNext = () => {
         navigate("/crear-solicitud/cotizacion", {
             state: { ...location.state, asistentes, totalAsistentes },

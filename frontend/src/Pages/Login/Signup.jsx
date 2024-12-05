@@ -23,7 +23,7 @@ export function SignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Evita que la página se recargue al enviar el formulario
     try {
-      const response = await fetch('http://localhost:8000/signup', { // Envía los datos del formulario a la ruta de registro
+      const response = await fetch('http://localhost:8000/usuario/signup', { // Envía los datos del formulario a la ruta de registro
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

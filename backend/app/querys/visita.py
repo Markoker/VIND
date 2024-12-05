@@ -1,4 +1,4 @@
-from ..utils import *
+from querys.utils import get_connection
 
 
 def Save(visita):

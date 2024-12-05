@@ -1,4 +1,4 @@
-from ..utils import *
+from querys.utils import *
 
 
 def getEmplazamientos(query_type="all"):

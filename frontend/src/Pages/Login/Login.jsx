@@ -11,7 +11,7 @@ export function Login() {
     e.preventDefault(); // Evita que se recargue la página
 
     try {
-      const response = await fetch('http://localhost:8000/login', {  // Envía los datos del formulario a la ruta de inicio de sesión
+      const response = await fetch('http://localhost:8000/usuario/login', {  // Envía los datos del formulario a la ruta de inicio de sesión
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

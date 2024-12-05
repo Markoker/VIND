@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import Optional, List
 import os
 
-from utils import *
+from querys.utils import *
 import querys.cotizacion as Cotizacion
 import querys.emplazamiento as Emplazamiento
 import querys.solicitud as Solicitud
@@ -50,10 +50,14 @@ class CrearSolicitudRequest(BaseModel):
     visita: dict
     cotizacion: Optional[dict] = None
 
+user_router = APIRouter(prefix="/usuario", tags=["usuario"])
+solicitud_router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
+emplazamiento_router = APIRouter(prefix="/emplazamiento", tags=["emplazamiento"])
+asignatura_router = APIRouter(prefix="/asignatura", tags=["asignatura"])
 
 
 
-@app.post("/solicitudes")
+@solicitud_router.post("/")
 async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
     try:
         # Crear visita
@@ -98,9 +102,9 @@ def status():
     return {"message": "Funcionando"}
 
 # Login
-@app.post("/login")
+@user_router.post("/login")
 def nuevo_login(usuario: UsuarioLogin):
-    rows = usuario.login(usuario.email, usuario.password)
+    rows = Usuario.login(usuario.email, usuario.password)
     print(rows)
     if len(rows) == 0:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
@@ -114,7 +118,7 @@ def nuevo_login(usuario: UsuarioLogin):
     }
 
 # SignUp
-@app.post("/signup")
+@user_router.post("/signup")
 def signup(usuario: UsuarioCreate):
     try:
         nuevo_usuario = usuario.createUser(
@@ -129,7 +133,7 @@ def signup(usuario: UsuarioCreate):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 # Obtener emplazamientos
-@app.get("/emplazamiento")
+@emplazamiento_router.get("/")
 async def get_emplazamientos():
     try:
         emplazamientos = Emplazamiento.getEmplazamientos()
@@ -141,7 +145,7 @@ async def get_emplazamientos():
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 # Obtener unidades académicas por emplazamiento
-@app.get("/emplazamiento/{id_emplazamiento}/unidad_academica")
+@emplazamiento_router.get("/{id_emplazamiento}/unidad_academica")
 async def get_unidades_academicas(id_emplazamiento: int):
     try:
         print(f"Recibiendo unidades académicas para emplazamiento: {id_emplazamiento}")
@@ -155,7 +159,7 @@ async def get_unidades_academicas(id_emplazamiento: int):
         raise HTTPException(status_code=400, detail=str(e))
 
     
-@app.get("/solicitudes/{rut}")
+@solicitud_router.get("/{rut}")
 def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
     try:
         solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id)
@@ -186,7 +190,7 @@ def obtener_unidades_academicas():
 
 
 # Obtener usuarios
-@app.get("/usuario")
+@user_router.get("/")
 async def get_usuarios():
     try:
         usuarios = Usuario.getUsuarios()
@@ -199,7 +203,7 @@ async def get_usuarios():
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.get("/usuario/{rut}")
+@user_router.get("/{rut}")
 def obtener_usuario(rut: str):
     try:
         usuario = Usuario.getUsuarios(query_type="by_rut", rut=rut)
@@ -209,7 +213,7 @@ def obtener_usuario(rut: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@app.get("/usuario/{rut}/rol")
+@user_router.get("/{rut}/rol")
 def obtener_usuario(rut: str):
     try:
         roles = Usuario.getRolesUsuario(rut)
@@ -219,7 +223,7 @@ def obtener_usuario(rut: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@app.get("/usuario/{rut}/rol/{rol}")
+@user_router.get("/{rut}/rol/{rol}")
 def obtener_usuario(rut: str,
                     rol: str):
     try:
@@ -230,7 +234,7 @@ def obtener_usuario(rut: str,
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.get("/usuario/{rut}/rol/{rol}/emplazamiento")
+@user_router.get("/{rut}/rol/{rol}/emplazamiento")
 def obtenerEmplazamientosPorRol(rut: str, rol: str):
     try:
         rows = Usuario.getRolEmplacements(rut, rol)
@@ -243,7 +247,7 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@app.get("/usuario/{rut}/rol/{rol}/emplazamiento/{emplazamiento_id}/unidad-academica")
+@user_router.get("/{rut}/rol/{rol}/emplazamiento/{emplazamiento_id}/unidad-academica")
 def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
     try:
         rows = Usuario.getRolDeptos(rut, rol, emplazamiento_id)
@@ -257,7 +261,7 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.get("/asignaturas")
+@asignatura_router.get("/")
 def obtener_asignaturas(unidad_academica: int, semestre: int):
     try:
         print(f"Unidad Académica: {unidad_academica}, Semestre: {semestre}")
@@ -273,7 +277,7 @@ def obtener_asignaturas(unidad_academica: int, semestre: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/asignaturas_paralelos")
+@asignatura_router.get("/paralelo")
 def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
     try:
         print(f"Recibiendo unidad_academica={unidad_academica}, semestre={semestre}")
@@ -296,7 +300,7 @@ def obtener_asignaturas_paralelos(unidad_academica: int, semestre: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/asignaturas_max")
+@asignatura_router.get("/max")
 def obtener_max_asignaturas(unidad_academica: int, semestre: int):
     try:
         max_asignaturas = Asignatura.Count(id_unidad_academica=unidad_academica, semestre=semestre)
@@ -306,7 +310,7 @@ def obtener_max_asignaturas(unidad_academica: int, semestre: int):
 
 
 # Obtener asignaturas por unidad académica
-@app.get("/emplazamiento/{id_emplazamiento}/unidad_academica/{id_unidad_academica}/asignatura")
+@emplazamiento_router.get("/{id_emplazamiento}/unidad_academica/{id_unidad_academica}/asignatura")
 async def get_asignatura(id_emplazamiento: int,
                          id_unidad_academica: int):
     try:
@@ -320,6 +324,11 @@ async def get_asignatura(id_emplazamiento: int,
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+
+app.include_router(user_router)
+app.include_router(solicitud_router)
+app.include_router(emplazamiento_router)
+app.include_router(asignatura_router)
 
 '''
 @app.get("/rendiciones/resumen", response_model=DineroResumen)

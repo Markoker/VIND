@@ -36,7 +36,7 @@ export function DatosAsignatura() {
     useEffect(() => {
         if (selectedUnidad && semestre) {
             axios
-                .get(`http://localhost:8000/asignaturas_paralelos?unidad_academica=${selectedUnidad}&semestre=${semestre}`)
+                .get(`http://localhost:8000/asignatura/paralelo?unidad_academica=${selectedUnidad}&semestre=${semestre}`)
                 .then((res) => {
                     console.log("Asignaturas obtenidas:", res.data);
                     setAsignaturas(res.data);
@@ -65,6 +65,7 @@ export function DatosAsignatura() {
                 paralelos: asignatura.paralelos,
                 maxParalelos: asignatura.paralelos.length,
                 numParalelos: 0,
+                paralelosSeleccionados: [],
             };
         } else {
             nuevasAsignaturas[index] = null; // En caso de seleccionar vacío
@@ -135,7 +136,7 @@ export function DatosAsignatura() {
                             />
                         </label>
                         <div>
-                            {Array.from({ length: asignaturasSeleccionadas[index]?.numParalelos || 0 }).map(
+                            {Array.from({ length: asignaturasSeleccionadas[index]?.numParalelos || 1 }).map(
                                 (_, paraleloIndex) => (
                                     <div key={paraleloIndex}>
                                         <label>Paralelo {paraleloIndex + 1}:</label>

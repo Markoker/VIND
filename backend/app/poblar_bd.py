@@ -1,8 +1,7 @@
 import random
-from datetime import datetime
 import pandas as pd
 
-from utils import *
+from querys.utils import *
 import querys.usuario as Usuario
 import querys.emplazamiento as Emplazamiento
 
@@ -46,11 +45,11 @@ roles = ['jefe', 'trabajador', 'contador']
 # Borrar datos de todas las tablas respetando el orden de dependencias
 # Para reinicios de la base de datos
 def borrar_datos():
-    cur.execute("DELETE FROM Usuario")
     cur.execute("DELETE FROM Funcionario")
     cur.execute("DELETE FROM Ingeniero")
     cur.execute("DELETE FROM Director")
     cur.execute("DELETE FROM Subdirector")
+    cur.execute("DELETE FROM Usuario")
     cur.execute("DELETE FROM Solicitud")
     cur.execute("DELETE FROM HistorialEstadoSolicitud")
     cur.execute("DELETE FROM Visita")
@@ -140,7 +139,7 @@ def generar_usuarios():
             email = f"{nombre}.{apellido}{random.randint(1, 100)}@usm.cl".lower()
             cur.execute("SELECT * FROM Usuario WHERE email = %s;", (email,))
 
-        createUser(rut=rut, email=email, first_name=nombre, last_name=apellido, password="1234")
+        Usuario.createUser(rut=rut, email=email, first_name=nombre, last_name=apellido, password="1234")
 
     print("Usuarios generados exitosamente.")
 
