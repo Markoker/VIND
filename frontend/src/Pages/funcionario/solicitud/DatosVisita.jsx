@@ -52,6 +52,7 @@ export function DatosVisita() {
                 cols="50"
             />
             <button onClick={handleNext}>Siguiente</button>
+            <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>
     );
 }

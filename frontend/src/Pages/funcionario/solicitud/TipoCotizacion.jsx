@@ -245,6 +245,7 @@ export function TipoCotizacion() {
         <button onClick={handleNext} disabled={error !== ""}>
             Enviar
         </button>
+        <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>
     );
 }

@@ -56,6 +56,7 @@ export function ListadoAsistentes() {
             <button onClick={handleNext} disabled={totalAsistentes === 0}>
                 Siguiente
             </button>
+            <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>
     );
 }

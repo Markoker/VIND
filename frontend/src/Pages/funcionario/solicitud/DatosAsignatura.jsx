@@ -221,6 +221,7 @@ export function DatosAsignatura() {
             {/* Renderizado dinámico de asignaturas */}
             {renderAsignaturas()}
             <button onClick={handleEnviarDatos}>Siguiente</button>
+            <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>
     );
 }
