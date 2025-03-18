@@ -7,14 +7,13 @@ export function DatosVisita() {
         nombre_empresa: "",
         fecha: "",
         lugar: "",
-        profesor_id: "",
         descripcion: "",
     });
     const navigate = useNavigate();
     const location = useLocation();
     const handleNext = () => {
         localStorage.setItem("datosVisita", JSON.stringify(visita));
-        navigate("/crear-solicitud/asistentes", { state: { ...location.state, visita } });
+        navigate("/funcionario/crear-solicitud/encargados", { state: { ...location.state, visita } });
     };
 
     return (
@@ -37,12 +36,6 @@ export function DatosVisita() {
                 placeholder="Lugar"
                 value={visita.lugar}
                 onChange={(e) => setVisita({ ...visita, lugar: e.target.value })}
-            />
-            <input
-                type="text"
-                placeholder="RUT Profesor"
-                value={visita.profesor_id}
-                onChange={(e) => setVisita({ ...visita, profesor_id: e.target.value })}
             />
             <input
                 placeholder="Descripcion"

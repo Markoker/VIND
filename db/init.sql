@@ -50,7 +50,7 @@ CREATE TABLE UnidadAcademica (
 CREATE TABLE Funcionario (
     id SERIAL PRIMARY KEY,
     usuario_rut CHAR(10) NOT NULL,
-    unidad_academica_id INT NOT NULL,
+    INT NOT NULL,
     FOREIGN KEY (usuario_rut) REFERENCES Usuario(rut),
     FOREIGN KEY (unidad_academica_id) REFERENCES UnidadAcademica(id_unidad_academica)
 );
@@ -201,9 +201,12 @@ CREATE TABLE HistorialEstadoSolicitud (
 CREATE TABLE Visitante (
     id SERIAL PRIMARY KEY,
     visita_id INT NOT NULL,
-    nombre VARCHAR(64) NOT NULL,
+    nombre VARCHAR(96) NOT NULL,
     rut CHAR(12) NOT NULL,
+    rol VARCHAR(12) NOT NULL,
     email VARCHAR(254) NOT NULL,
+    vtr VARCHAR(12) NOT NULL,
+    carrera VARCHAR(64) NOT NULL,
     FOREIGN KEY (visita_id) REFERENCES Visita(id_visita)
 );
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate} from "react-router-dom";
 import axios from "axios";
+import readXlsxFile from "read-excel-file";
 
 export function DatosAsignatura() {
     const [campus, setCampus] = useState([]);
@@ -14,6 +15,8 @@ export function DatosAsignatura() {
     const [numAsignaturas, setNumAsignaturas] = useState(0);
     const [asignaturasSeleccionadas, setAsignaturasSeleccionadas] = useState([]);
     const navigate = useNavigate();
+    const [asistentes, setAsistentes] = useState([]);
+    const [totalAsistentes, setTotalAsistentes] = useState(0);
 
     const rut = localStorage.getItem("userRut");
 
@@ -55,13 +58,13 @@ export function DatosAsignatura() {
         }
     }, [selectedUnidad, semestre]);
 
-    const handleAsignaturaChange = (index, nombreAsignatura) => {
+    const handleAsignaturaChange = (index, siglaAsignatura) => {
         const nuevasAsignaturas = [...asignaturasSeleccionadas];
-        const asignatura = asignaturas.find((a) => a.nombre === nombreAsignatura);
+        const asignatura = asignaturas.find((a) => a.sigla === siglaAsignatura);
 
         if (asignatura) {
             nuevasAsignaturas[index] = {
-                nombre: nombreAsignatura,
+                sigla: siglaAsignatura,
                 paralelos: asignatura.paralelos,
                 maxParalelos: asignatura.paralelos.length,
                 numParalelos: 0,
@@ -105,8 +108,43 @@ export function DatosAsignatura() {
             alert("No hay datos de asignaturas seleccionados para enviar.");
             return;
         }
-        navigate("/crear-solicitud/visita", { state: { asignaturas: datosAsignaturas } });
+        navigate("/funcionario/crear-solicitud/visita", { state: { asignaturas: datosAsignaturas } });
     }
+
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        readXlsxFile(file).then((rows) => {
+            if (rows.length <= 0) {
+                alert("Ingrese un archivo valido");
+            }
+
+            let [header, ...data] = rows;
+
+            if (JSON.stringify(data[7]) !== JSON.stringify(["N°","ROL USM","DV","RUT","DV","Ap.Paterno","Ap.Materno","Nombres","VTR","Carrera","Correo"])) {
+                alert("El archivo no tiene el formato correcto");
+                return;
+            }
+
+            // Eliminar las 7 primeras filas
+            data = data.slice(8);
+
+            const asistentesProcesados = data.map((row) => ({
+                rol: row[1] + "-" + row[2],
+                rut: row[3] + "-" + row[4],
+                nombre: row[7] + " " + row[5] + " " + row[6],
+                carrera: row[9],
+                correo: row[10],
+                VTR: row[8],
+            }));
+
+            console.log(asistentesProcesados);
+
+            setAsistentes(asistentesProcesados); // Guardar el listado completo
+            setTotalAsistentes(asistentesProcesados.length); // Total de filas válidas
+            localStorage.setItem("totalAsistentes", asistentesProcesados.length);
+        });
+        };
     
     const renderAsignaturas = () => {
         return Array.from({ length: numAsignaturas }, (_, index) => (
@@ -114,12 +152,12 @@ export function DatosAsignatura() {
                 <h3>Asignatura {index + 1}</h3>
                 <select
                     onChange={(e) => handleAsignaturaChange(index, e.target.value)}
-                    value={asignaturasSeleccionadas[index]?.nombre || ""}
+                    value={asignaturasSeleccionadas[index]?.sigla || ""}
                 >
                     <option value="">Seleccionar Asignatura</option>
                     {asignaturas.map((a) => (
-                        <option key={a.nombre} value={a.nombre}>
-                            {a.nombre}
+                        <option key={a.sigla} value={a.sigla}>
+                            {a.sigla} - {a.nombre}
                         </option>
                     ))}
                 </select>
@@ -155,6 +193,10 @@ export function DatosAsignatura() {
                                                 </option>
                                             ))}
                                         </select>
+
+                                        <h4>Listado de Asistentes</h4>
+                                        <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload}/>
+                                        <p>Total asistentes: {totalAsistentes}</p>
                                     </div>
                                 )
                             )}

@@ -22,6 +22,18 @@ def Save(visita):
     return visita_id
 
 
+def getProfesores():
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM Profesor;")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
 def SaveVisitanteList(visita_id, asistentes):
     # asistentes: Lista de diccionarios con los datos de los asistentes.
     conn = get_connection()

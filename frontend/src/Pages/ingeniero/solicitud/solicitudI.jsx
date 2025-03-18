@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
 
-export function VerSolicitudesF({ rut }) {
+export function SolicitudI({ rut }) {
     const [solicitudes, setSolicitudes] = useState([]);
-    const [unidadAcademicaId, setUnidadAcademicaId] = useState(null);
-    const [unidades, setUnidades] = useState([]);
+    const [emplazamientoId, setEmplazamientoId] = useState(null);
+    const [emplazamientos, setEmplazamientos] = useState([]);
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
@@ -13,18 +13,18 @@ export function VerSolicitudesF({ rut }) {
 
     useEffect(() => {
         // Obtener unidades académicas disponibles
-        const fetchUnidades = async () => {
+        const fetchEmplazamientos = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/ingeniero/unidad-academica`);
-                setUnidades(response.data);
+                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/ingeniero/emplazamiento`);
+                setEmplazamientos(response.data);
             } catch (err) {
                 setError(
-                    err.response?.data?.detail || "Error al obtener las unidades académicas."
+                    err.response?.data?.detail || "Error al obtener los emplazamientos."
                 );
             }
         };
 
-        fetchUnidades();
+        fetchEmplazamientos();
     }, []);
 
     rut = localStorage.getItem("userRut");
@@ -33,9 +33,9 @@ export function VerSolicitudesF({ rut }) {
         const fetchSolicitudes = async () => {
             try {
 
-                const url = unidadAcademicaId
-                    ? `http://localhost:8000/solicitudes/funcionario/${rut}?unidad_academica_id=${unidadAcademicaId}`
-                    : `http://localhost:8000/solicitudes/funcionario/${rut}`;
+                const url = emplazamientoId
+                    ? `http://localhost:8000/solicitudes/${rut}?unidad_academica_id=${emplazamientoId}`
+                    : `http://localhost:8000/solicitudes/ingeniero/${rut}`;
                 const response = await axios.get(url);
                 setSolicitudes(response.data);
             } catch (err) {
@@ -46,7 +46,7 @@ export function VerSolicitudesF({ rut }) {
         };
 
         fetchSolicitudes();
-    }, [rut, unidadAcademicaId]);
+    }, [rut, emplazamientoId]);
 
     return (
         <div>
@@ -57,11 +57,11 @@ export function VerSolicitudesF({ rut }) {
                 <label htmlFor="unidadAcademica">Filtrar por Unidad Académica:</label>
                 <select
                     id="unidadAcademica"
-                    value={unidadAcademicaId || ""}
-                    onChange={(e) => setUnidadAcademicaId(e.target.value || null)}
+                    value={emplazamientoId || ""}
+                    onChange={(e) => setEmplazamientoId(e.target.value || null)}
                 >
                     <option value="">Todas</option>
-                    {unidades.map((unidad) => (
+                    {emplazamientos.map((unidad) => (
                         <option key={unidad.id} value={unidad.id}>
                             {unidad.nombre}
                         </option>
@@ -76,6 +76,7 @@ export function VerSolicitudesF({ rut }) {
                     <th>Fecha</th>
                     <th>Estado</th>
                     <th>Descripción</th>
+                    <th>Emplazamiento</th>
                     <th>Asignatura</th>
                     <th>Visita</th>
                 </tr>
@@ -87,6 +88,7 @@ export function VerSolicitudesF({ rut }) {
                         <td>{new Date(solicitud.fecha).toLocaleDateString()}</td>
                         <td>{solicitud.estado}</td>
                         <td>{solicitud.descripcion}</td>
+                        <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
                         <td>{solicitud.visita}</td>
                         <td><a href={`/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>

@@ -32,7 +32,7 @@ export function Login() {
       if (rut) {
         // Guarda el RUT en localStorage si está disponible
         localStorage.setItem("userRut", rut);
-        alert(`Bienvenido, ${data.message}`);
+        alert(`Te damos la bienvenida, ${data.message}`);
       } else {
           throw new Error("RUT no encontrado en la respuesta del servidor.");
       } // Muestra un mensaje de alerta

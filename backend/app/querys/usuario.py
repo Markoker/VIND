@@ -135,16 +135,19 @@ def getRolEmplacements(rut,
     cur = conn.cursor()
 
     if rol == "funcionario":
-        # From the table Funcionario select the rows where usuario_rut is equal to the given rut
-        # Join the table UnidadAcademica with the table Emplazamiento
-        # Select the id_emplazamiento and the nombre from the table Emplazamiento
-
         cur.execute("""
             SELECT DISTINCT e.id_emplazamiento, e.nombre, e.sigla
             FROM Funcionario f
             JOIN UnidadAcademica u ON f.unidad_academica_id = u.id_unidad_academica
             JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
             WHERE f.usuario_rut = %s;
+        """, (rut,))
+    elif rol == "ingeniero":
+        cur.execute("""
+            SELECT DISTINCT e.id_emplazamiento, e.nombre, e.sigla
+            FROM Ingeniero i
+            JOIN Emplazamiento e ON i.emplazamiento_id = e.id_emplazamiento
+            WHERE i.usuario_rut = %s;
         """, (rut,))
     else:
         raise ValueError("Rol no válido")
@@ -155,7 +158,7 @@ def getRolEmplacements(rut,
     return [{"id": row[0], "nombre": row[1], "sigla": row[2]} for row in rows]
 
 
-def getRolDeptos(rut, rol, id_emplazamiento):
+def getRolDeptos(rut, rol, id_emplazamiento=None):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
@@ -163,17 +166,21 @@ def getRolDeptos(rut, rol, id_emplazamiento):
     cur = conn.cursor()
 
     if rol == "funcionario":
-        # From the table Funcionario select the rows where usuario_rut is equal to the given rut
-        # Join the table UnidadAcademica with the table Emplazamiento
-        # Select the id_emplazamiento and the nombre from the table Emplazamiento
-
-        cur.execute("""
-                SELECT DISTINCT u.id_unidad_academica, u.nombre
-                FROM Funcionario f
-                JOIN UnidadAcademica u ON f.unidad_academica_id = u.id_unidad_academica
-                JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
-                WHERE f.usuario_rut = %s AND e.id_emplazamiento = %s;
-            """, (rut, id_emplazamiento))
+        if id_emplazamiento is None:
+            cur.execute("""
+                            SELECT DISTINCT u.id_unidad_academica, u.nombre
+                            FROM Funcionario f
+                            JOIN UnidadAcademica u ON f.unidad_academica_id = u.id_unidad_academica
+                            WHERE f.usuario_rut = %s;
+                        """, (rut,))
+        else:
+            cur.execute("""
+                    SELECT DISTINCT u.id_unidad_academica, u.nombre
+                    FROM Funcionario f
+                    JOIN UnidadAcademica u ON f.unidad_academica_id = u.id_unidad_academica
+                    JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+                    WHERE f.usuario_rut = %s AND e.id_emplazamiento = %s;
+                """, (rut, id_emplazamiento))
     else:
         raise ValueError("Rol no válido")
 

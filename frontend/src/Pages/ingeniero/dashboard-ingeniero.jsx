@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-export function DashboardFuncionario() {
+export function DashboardIngeniero() {
     const navigate = useNavigate();
     const handleLogout = () => {
         // Aquí puedes manejar el proceso de logout, como limpiar el estado global o cookies
@@ -11,15 +11,12 @@ export function DashboardFuncionario() {
 
     return (
         <div style={{padding: "20px"}}>
-            <h1>Dashboard del Funcionario</h1>
+            <h1>Dashboard del Ingeniero</h1>
             <div style={{marginBottom: "20px"}}>
                 <button onClick={handleLogout}>Logout</button>
             </div>
             <div>
-                <Link to="/funcionario/solicitudes">Ver Solicitudes</Link>
-            </div>
-            <div>
-                <Link to="/funcionario/crear-solicitud/asignatura">Crear Solicitud</Link>
+                <Link to="/ingeniero/solicitudes">Ver Solicitudes</Link>
             </div>
             <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>

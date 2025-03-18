@@ -6,7 +6,9 @@ import { Home } from './Pages/Home';
 import { SignUp } from './Pages/Login/Signup';
 import { Login } from './Pages/Login/Login';
 import { SelectProfile } from './Pages/selectProfile';
-import { VerSolicitudes } from './Pages/funcionario/verSolicitudes'
+import { VerSolicitudesF } from './Pages/funcionario/verSolicitudes'
+import { VerSolicitudesI } from './Pages/ingeniero/verSolicitudes'
+// import { VerSolicitudesI } from './Pages/ingeniero/verSolicitudes'
 
 import { Dashboard } from './Pages/Dashboard';
 import { DashboardFuncionario } from './Pages/funcionario/dashboard-funcionario';
@@ -30,6 +32,8 @@ import { RevisarDevolucion } from './Pages/contador/RevisarDevolucion';
 */
 import { PrivateRoute } from './PrivateRoute';
 import { Logout } from './Pages/Login/logout';
+import {Encargados} from "./Pages/funcionario/solicitud/encargados";
+import {DashboardIngeniero} from "./Pages/ingeniero/dashboard-ingeniero";
 
 function App() {
   return (
@@ -41,10 +45,19 @@ function App() {
       <Route path="/home" element={<SelectProfile />} />
 
       <Route
-        path="/dashboard-funcionario"
+        path="/funcionario/dashboard"
         element={
           <PrivateRoute allowedRoles={["funcionario"]}>
             <DashboardFuncionario />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/ingeniero/dashboard"
+        element={
+          <PrivateRoute allowedRoles={["ingeniero"]}>
+            <DashboardIngeniero />
           </PrivateRoute>
         }
       />
@@ -66,12 +79,68 @@ function App() {
               </PrivateRoute>
           }
       />
-      <Route path="/ver-solicitudes" element={<VerSolicitudes />} />
-      <Route path="/crear-solicitud/asignatura" element={<DatosAsignatura />} />
-      <Route path="/crear-solicitud/visita" element={<DatosVisita />} />
-      <Route path="/crear-solicitud/asistentes" element={<ListadoAsistentes />} />
-      <Route path="/crear-solicitud/cotizacion" element={<TipoCotizacion />} />
-      <Route path="/logout" element={<Logout />} />
+      <Route
+          path="/funcionario/solicitudes"
+          element={
+              <PrivateRoute allowedRoles={["funcionario"]}>
+                <VerSolicitudesF />
+              </PrivateRoute>
+            }
+      />
+      <Route
+          path="/funcionario/crear-solicitud/asignatura"
+          element={
+              <PrivateRoute allowedRoles={["funcionario"]}>
+                  <DatosAsignatura />
+              </PrivateRoute>
+          }
+      />
+      <Route
+          path="/funcionario/crear-solicitud/visita"
+          element={
+              <PrivateRoute allowedRoles={["funcionario"]}>
+                  <DatosVisita />
+              </PrivateRoute>
+          }
+      />
+      <Route
+          path="/funcionario/crear-solicitud/encargados"
+          element={
+              <PrivateRoute allowedRoles={["funcionario"]}>
+                  <Encargados />
+              </PrivateRoute>
+          }
+      />
+      <Route
+          path="/funcionario/crear-solicitud/cotizacion"
+          element={
+              <PrivateRoute allowedRoles={["funcionario"]}>
+                  <TipoCotizacion />
+              </PrivateRoute>
+          }
+      />
+
+      <Route
+          path="/ingeniero/solicitudes"
+          element={
+              <PrivateRoute allowedRoles={["ingeniero"]}>
+                  <VerSolicitudesI />
+              </PrivateRoute>
+          }
+      />
+        <Route
+            path="/ingeniero/solicitudes/{id_solicitud}"
+            element={
+                <PrivateRoute allowedRoles={["ingeniero"]}>
+                    <SolicitudI />
+                </PrivateRoute>
+            }
+        />
+
+      <Route
+          path="/logout"
+          element={<Logout />}
+      />
     </Routes>
   );
 }

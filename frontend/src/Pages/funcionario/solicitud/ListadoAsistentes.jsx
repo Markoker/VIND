@@ -44,7 +44,7 @@ export function ListadoAsistentes() {
         });
         };
     const handleNext = () => {
-        navigate("/crear-solicitud/cotizacion", {
+        navigate("/funcionario/crear-solicitud/cotizacion", {
             state: { ...location.state, asistentes, totalAsistentes },
         });
     };

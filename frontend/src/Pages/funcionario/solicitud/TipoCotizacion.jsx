@@ -46,7 +46,7 @@ export function TipoCotizacion() {
 
             await axios.post("http://localhost:8000/solicitudes", solicitud);
             alert("La solicitud fue enviada");
-            navigate("/dashboard-funcionario");
+            navigate("/funcionario/dashboard");
         } catch (error) {
             console.error("Error al enviar la solicitud:", error);
             alert("Hubo un error al enviar la solicitud. Por favor, inténtelo de nuevo.");

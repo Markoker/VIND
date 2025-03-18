@@ -4,6 +4,9 @@ import pandas as pd
 from querys.utils import *
 import querys.usuario as Usuario
 import querys.emplazamiento as Emplazamiento
+import querys.visita as Visita
+import querys.asignatura as Asignatura
+import querys.solicitud as Solicitud
 
 # Conectar a la base de datos
 conn = get_connection()
@@ -45,11 +48,11 @@ roles = ['jefe', 'trabajador', 'contador']
 # Borrar datos de todas las tablas respetando el orden de dependencias
 # Para reinicios de la base de datos
 def borrar_datos():
+    cur.execute("DELETE FROM AsignaturaSolicitud")
     cur.execute("DELETE FROM Funcionario")
     cur.execute("DELETE FROM Ingeniero")
     cur.execute("DELETE FROM Director")
     cur.execute("DELETE FROM Subdirector")
-    cur.execute("DELETE FROM Usuario")
     cur.execute("DELETE FROM Solicitud")
     cur.execute("DELETE FROM HistorialEstadoSolicitud")
     cur.execute("DELETE FROM Visita")
@@ -62,6 +65,7 @@ def borrar_datos():
     cur.execute("DELETE FROM Asignatura")
     cur.execute("DELETE FROM UnidadAcademica")
     cur.execute("DELETE FROM Emplazamiento")
+    cur.execute("DELETE FROM Usuario")
     conn.commit()
 
 # Para reinicios de la base de datos sin necesidad de reiniciar contenedores
@@ -128,8 +132,20 @@ def generar_usuarios():
     # Generar usuarios
     for i in range(100):
         rut = str(random.randint(10000000, 25000000)) + "-" + str(random.randint(0, 9))
-        nombre = random.choice(nombres)
-        apellido = random.choice(apellidos)
+        nombre = (random.choice(nombres).lower()
+                  .replace("á", "a")
+                  .replace("é", "e")
+                  .replace("í", "i")
+                  .replace("ó", "o")
+                  .replace("ú", "u")
+                  .replace("ñ", "n"))
+        apellido = (random.choice(apellidos).lower()
+                  .replace("á", "a")
+                  .replace("é", "e")
+                  .replace("í", "i")
+                  .replace("ó", "o")
+                  .replace("ú", "u")
+                  .replace("ñ", "n"))
 
         email = f"{nombre}.{apellido}@usm.cl".lower()
 
@@ -181,6 +197,134 @@ def generar_roles():
     conn.commit()
     print("Roles generados exitosamente.")
 
+def generar_profesores():
+    # Generate professors
+    for i in range(50):  # Adjust the number of professors as needed
+        rut = str(random.randint(10000000, 25000000)) + "-" + str(random.randint(0, 9))
+        nombre = (random.choice(nombres).lower()
+                  .replace("á", "a")
+                  .replace("é", "e")
+                  .replace("í", "i")
+                  .replace("ó", "o")
+                  .replace("ú", "u")
+                  .replace("ñ", "n"))
+        apellido = (random.choice(apellidos).lower()
+                  .replace("á", "a")
+                  .replace("é", "e")
+                  .replace("í", "i")
+                  .replace("ó", "o")
+                  .replace("ú", "u")
+                  .replace("ñ", "n"))
+
+        email = f"{nombre}.{apellido}@usm.cl".lower()
+
+        # Check if email already exists
+        cur.execute("SELECT * FROM Profesor WHERE email = %s;", (email,))
+        while cur.fetchone() is not None:
+            email = f"{nombre}.{apellido}{random.randint(1, 100)}@usm.cl".lower()
+            cur.execute("SELECT * FROM Profesor WHERE email = %s;", (email,))
+
+        cur.execute(
+            "INSERT INTO Profesor (rut, nombre, email) VALUES (%s, %s, %s);",
+            (rut, f"{nombre} {apellido}", email)
+        )
+
+    conn.commit()
+    print("Profesores generados exitosamente.")
+
+def generar_solicitud(rut_usuario=None):
+    # Seleccionar un usuario aleatorio
+    if rut_usuario is not None:
+        usuario = Usuario.getUsuarios(query_type="by_rut", rut=rut_usuario)
+    else:
+        usuario = random.choice(Usuario.getUsuarios())
+
+    # Crear una visita
+    profesor = random.choice(Visita.getProfesores())
+    nombre_empresa = random.choice(['Empresa A', 'Empresa B', 'Empresa C'])
+
+    # Random date
+    fecha_visita = f"{random.randint(2024, 2025)}-{random.randint(1, 12)}-{random.randint(1, 28)}-"
+
+    lugar_visita = f"Lugar {random.randint(1, 100)}"
+    cur.execute(
+        "INSERT INTO Visita (nombre_empresa, fecha, lugar, profesor_id) VALUES (%s, %s, %s, %s) RETURNING id_visita;",
+        (nombre_empresa, fecha_visita, lugar_visita, profesor[0])
+    )
+    visita_id = cur.fetchone()[0]
+
+    # Crear una cotización
+    tipo_cotizacion = random.choice(['Solo traslado', 'Solo colacion', 'Traslado y colacion'])
+
+    id_traslado = None
+    id_colacion = None
+
+    if tipo_cotizacion == 'Solo traslado' or tipo_cotizacion == 'Traslado y colacion':
+        # Crear un traslado
+        nombre_proveedor = f'Proveedor {random.randint(1, 100)}'
+        rut_proveedor = f"{random.randint(10000000, 25000000)}-{random.randint(0, 9)}"
+        correo_proveedor = 'aaa@proveedor.com'
+        monto_traslado = random.randint(1000, 10000)
+        cotizacion_1 = "asadjaisd"
+
+        cur.execute(
+            "INSERT INTO Traslado (nombre_proveedor, rut_proveedor, correo_proveedor, monto) VALUES (%s, %s, %s, %s) RETURNING id;",
+            (nombre_proveedor, rut_proveedor, correo_proveedor, monto_traslado)
+        )
+        id_traslado = cur.fetchone()[0]
+
+    if tipo_cotizacion == 'Solo colacion' or tipo_cotizacion == 'Traslado y colacion':
+        # Crear una colacion
+        nombre_proveedor = 'Proveedor Y'
+        tipo_sub = 'presupuesto'
+        rut_proveedor = '12345678-9'
+        correo_proveedor = 'aaa@proveedor.com'
+        monto_colacion = random.randint(1000, 10000)
+        cotizacion_1 = "asadjaisd"
+
+        cur.execute(
+            "INSERT INTO Colacion (nombre_proveedor, tipo_subvencion, rut_proveedor, correo_proveedor, monto) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
+            (nombre_proveedor, tipo_sub, rut_proveedor, correo_proveedor, monto_colacion)
+        )
+
+        id_colacion = cur.fetchone()[0]
+
+    monto_cotizacion = random.randint(1000, 10000)
+
+    cur.execute(
+        "INSERT INTO Cotizacion (tipo, monto, traslado_id, colacion_id) VALUES (%s, %s, %s, %s) RETURNING id_cotizacion;",
+        (tipo_cotizacion, monto_cotizacion, id_traslado, id_colacion)
+    )
+
+    cotizacion_id = cur.fetchone()[0]
+
+    # Insertar la solicitud en la base de datos
+    descripcion_solicitud = 'Descripción de la solicitud'
+    cur.execute(
+        "INSERT INTO Solicitud (fecha, estado, descripcion, usuario_rut, visita_id, cotizacion_id) VALUES (CURRENT_DATE, 2, %s, %s, %s, %s) RETURNING id_solicitud;",
+        (descripcion_solicitud, usuario[0], visita_id, cotizacion_id)
+    )
+
+    solicitud_id = cur.fetchone()[0]
+
+    conn.commit()
+
+    # Crear registros correspondientes en la tabla AsignaturaSolicitud en base a las unidades academicas del usuario
+    print(f"{usuario[0] = }")
+    unidades_academicas = Usuario.getRolDeptos(usuario[0], "funcionario")
+    print(f"{unidades_academicas = }")
+
+    cant_asignaturas = random.randint(1, 3)
+
+    for i in range(cant_asignaturas):
+        asignatura = random.choice(Asignatura.Get(query_type="by_unidad", id_unidad_academica=random.choice(unidades_academicas)['id'], semestre=2))
+        cur.execute(
+            "INSERT INTO AsignaturaSolicitud (asignatura_id, solicitud_id) VALUES (%s, %s);",
+            (asignatura[0], solicitud_id )
+        )
+
+    conn.commit()
+    print("Solicitud generada exitosamente.")
 
 # Ejecutar los generadores de datos
 if __name__ == "__main__":
@@ -191,6 +335,56 @@ if __name__ == "__main__":
     cargar_datos_universidad('DATA.xlsx')
     generar_usuarios()
     generar_roles()
+
+    generar_profesores()
+
+
+    usuario_rut = "12345678-9"
+
+    Usuario.createUser(rut=usuario_rut, email="test@usm.cl", first_name="Juan", last_name="Tapia", password="1234")
+
+    unidades = Emplazamiento.getUnidadesAcademicas()
+    emplazamientos = Emplazamiento.getEmplazamientos()
+
+    isFuncionario = 1
+    isIngeniero = 1
+    isDirector = 1
+    isSubdirector = 1
+
+    if isFuncionario:
+        cantidad = random.randint(5, 10)
+        for i in range(cantidad):
+            unidad = random.choice(unidades)
+            cur.execute("INSERT INTO Funcionario (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
+                        (usuario_rut, unidad[0]))
+        conn.commit()
+
+    if isIngeniero:
+        cantidad = random.randint(5, 10)
+        for i in range(cantidad):
+            emplazamiento = random.choice(emplazamientos)
+            cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+                        (usuario_rut, emplazamiento['id']))
+        conn.commit()
+
+    if isDirector:
+        cantidad = random.randint(5, 10)
+        for i in range(cantidad):
+            emplazamiento = random.choice(emplazamientos)
+            cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+                        (usuario_rut, emplazamiento['id']))
+        conn.commit()
+
+    if isSubdirector:
+        cantidad = random.randint(5, 10)
+        for i in range(cantidad):
+            unidad = random.choice(unidades)
+            cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
+                        (usuario_rut, unidad[0]))
+        conn.commit()
+
+    for _ in range(10):
+        generar_solicitud(usuario_rut)
 
     # Confirmar los cambios
     conn.commit()

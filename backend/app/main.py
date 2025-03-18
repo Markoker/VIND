@@ -54,7 +54,7 @@ user_router = APIRouter(prefix="/usuario", tags=["usuario"])
 solicitud_router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 emplazamiento_router = APIRouter(prefix="/emplazamiento", tags=["emplazamiento"])
 asignatura_router = APIRouter(prefix="/asignatura", tags=["asignatura"])
-
+visita_router = APIRouter(prefix="/visita", tags=["visita"])
 
 
 @solicitud_router.post("/")
@@ -109,11 +109,11 @@ def nuevo_login(usuario: UsuarioLogin):
     if len(rows) == 0:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     rut = rows[0][0]   # Asumiendo que el RUT está en la primera columna de la tabla Trabajador
-    first_name = rows[0][1]
-    last_name = rows[0][2]
+    first_name = rows[0][2]
+    last_name = rows[0][3]
 
     return {
-        "message": f"Bienvenido {first_name}",
+        "message": f"{first_name.title()}.",
         "rut": rut
     }
 
@@ -159,10 +159,35 @@ async def get_unidades_academicas(id_emplazamiento: int):
         raise HTTPException(status_code=400, detail=str(e))
 
     
-@solicitud_router.get("/{rut}")
+@solicitud_router.get("/")
+def obtener_solicitudes():
+    try:
+        solicitudes = Solicitud.Get()
+        if solicitudes:
+            return solicitudes
+        raise HTTPException(status_code=404, detail="No se encontraron solicitudes.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@solicitud_router.get("/funcionario/{rut}")
 def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
     try:
-        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id)
+        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id, query_from="funcionario")
+        if solicitudes:
+            return solicitudes
+        raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@solicitud_router.get("/ingeniero/{rut}")
+def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
+    try:
+        # Get emplazamientos for the user
+        emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
+        emplazamiento_ids = [emplazamiento["id"] for emplazamiento in emplazamientos]
+
+        solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
+
         if solicitudes:
             return solicitudes
         raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
@@ -247,6 +272,19 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+@user_router.get("/{rut}/rol/{rol}/unidad-academica")
+def obtenerUnidadesPorRol(rut: str, rol: str):
+    try:
+        rows = Usuario.getRolDeptos(rut, rol)
+
+        if not rows:
+            raise HTTPException(status_code=404,
+                                detail=f"No se encontraron emplazamientos para el usuario {rut} con rol {rol}")
+
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 @user_router.get("/{rut}/rol/{rol}/emplazamiento/{emplazamiento_id}/unidad-academica")
 def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
     try:
@@ -259,7 +297,6 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
         return rows
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-
 
 @asignatura_router.get("/")
 def obtener_asignaturas(unidad_academica: int, semestre: int):
@@ -324,6 +361,18 @@ async def get_asignatura(id_emplazamiento: int,
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+# Obtener los profesores
+@visita_router.get("/profesores")
+async def get_profesores():
+    try:
+        profesores = Visita.getProfesores()
+
+        if profesores:
+            return profesores
+
+        raise HTTPException(status_code=404, detail="Profesores no encontrados.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 app.include_router(user_router)
 app.include_router(solicitud_router)

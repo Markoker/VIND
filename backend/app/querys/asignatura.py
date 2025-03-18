@@ -21,7 +21,9 @@ def Get(query_type="by_unidad",
                 SELECT * FROM Asignatura WHERE departamento_id = %s ORDER BY sigla;
             """, (id_unidad_academica,))
     else:
-        pass
+        cur.execute("""
+            SELECT * FROM Asignatura ORDER BY sigla;
+        """)
 
     rows = cur.fetchall()
     cur.close()
@@ -41,10 +43,11 @@ def GetConParalelos(query_type="by_unidad",
     if query_type == "by_unidad":
         if id_unidad_academica and semestre:
             cur.execute("""
-                SELECT nombre, ARRAY_AGG(paralelo) AS paralelos
+                SELECT sigla, nombre, ARRAY_AGG(paralelo) AS paralelos
                 FROM Asignatura
                 WHERE departamento_id = %s AND semestre = %s
-                GROUP BY nombre;
+                GROUP BY sigla, nombre
+                ORDER BY sigla;
             """, (id_unidad_academica, semestre,))
         else:
             raise ValueError("Faltan parámetros: id_unidad_academica y semestre son obligatorios.")
@@ -56,7 +59,7 @@ def GetConParalelos(query_type="by_unidad",
     conn.close()
 
     # Devuelve las asignaturas con sus paralelos
-    return [{"nombre": row[0], "paralelos": row[1]} for row in rows]
+    return [{"sigla": row[0], "nombre": row[1], "paralelos": row[2]} for row in rows]
 
 
 def Count(id_unidad_academica=None, semestre=None):
