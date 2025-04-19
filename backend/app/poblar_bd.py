@@ -129,6 +129,8 @@ def cargar_datos_universidad(archivo):
     print("Datos cargados exitosamente.")
 
 def generar_usuarios():
+    Usuario.createUser(rut="99999999-9", email="test@test.cl", first_name="nombre", last_name="apellido",
+                       password="1234")
     # Generar usuarios
     for i in range(100):
         rut = str(random.randint(10000000, 25000000)) + "-" + str(random.randint(0, 9))
@@ -193,6 +195,26 @@ def generar_roles():
             for i in range(cantidad):
                 unidad = random.choice(unidades)
                 cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);", (usuario[0], unidad[0]))
+
+    usuario_rut = "99999999-9"
+    unidad = random.sample(unidades, k=7)
+    emplazamiento = random.sample(emplazamientos, k=2)
+
+    for i in range(7):
+        cur.execute("INSERT INTO Funcionario (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
+                    (usuario_rut, unidad[i][0]))
+
+    for i in range(2):
+        cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+                    (usuario_rut, emplazamiento[i]['id']))
+
+    for i in range(2):
+        cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+                    (usuario_rut, emplazamiento[i]['id']))
+
+    for i in range(7):
+        cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
+                    (usuario_rut, unidad[i][0]))
 
     conn.commit()
     print("Roles generados exitosamente.")
@@ -383,8 +405,8 @@ if __name__ == "__main__":
                         (usuario_rut, unidad[0]))
         conn.commit()
 
-    for _ in range(10):
-        generar_solicitud(usuario_rut)
+    for _ in range(15):
+        generar_solicitud("99999999-9")
 
     # Confirmar los cambios
     conn.commit()

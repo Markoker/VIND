@@ -57,28 +57,31 @@ def Get():
     ]
 
 def GetAllIngeniero(emplazamientos_id=None):
+    print("Procesando GetAllIngeniero con emplazamientos_id:", emplazamientos_id)
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
-
-    # Emplazamientos_id es una lista de ids, obten todas las solicitudes que tengan al menos una asignatura en alguno de los emplazamientos
     query = """
-        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.nombre
-        FROM Solicitud s
-        INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
-        INNER JOIN Asignatura a ON a.id_asignatura = sa.asignatura_id
-        INNER JOIN Visita v ON s.visita_id = v.id_visita
-        INNER JOIN UnidadAcademica u ON a.departamento_id = u.id_unidad_academica
-        INNER JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
-        WHERE a.departamento_id = ANY(SELECT departamento_id FROM UnidadAcademica WHERE id_emplazamiento = ANY(%s))
-        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre
-        ORDER BY s.fecha DESC;
-    """
+            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.id_emplazamiento
+            FROM Solicitud s
+            INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
+            INNER JOIN Asignatura a ON a.id_asignatura = sa.asignatura_id
+            INNER JOIN Visita v ON s.visita_id = v.id_visita
+            INNER JOIN UnidadAcademica u ON a.departamento_id = u.id_unidad_academica
+            INNER JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+            WHERE e.id_emplazamiento = ANY(%s)
+            GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.id_emplazamiento
+            ORDER BY s.fecha DESC;
+        """
     cur.execute(query, (emplazamientos_id,))
 
     rows = cur.fetchall()
+    for r in rows:
+        print(r)
+        print()
+
     cur.close()
     conn.close()
 
@@ -115,7 +118,7 @@ def getPorEmplazamiento(emplazamiento_id):
             GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre
             ORDER BY s.fecha DESC;
         """
-    cur.execute(query, (emplazamientos_id,))
+    cur.execute(query, (emplazamiento_id,))
 
     rows = cur.fetchall()
     cur.close()

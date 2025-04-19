@@ -158,6 +158,7 @@ def getRolEmplacements(rut,
     return [{"id": row[0], "nombre": row[1], "sigla": row[2]} for row in rows]
 
 
+# Retorna los departamentos donde el usuario tiene acceso como el rol especificado
 def getRolDeptos(rut, rol, id_emplazamiento=None):
     conn = get_connection()
     if conn is None:
@@ -181,8 +182,24 @@ def getRolDeptos(rut, rol, id_emplazamiento=None):
                     JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
                     WHERE f.usuario_rut = %s AND e.id_emplazamiento = %s;
                 """, (rut, id_emplazamiento))
+    elif rol == "subdirector":
+        if id_emplazamiento is None:
+            cur.execute("""
+                            SELECT DISTINCT u.id_unidad_academica, u.nombre
+                            FROM Subdirector f
+                            JOIN UnidadAcademica u ON f.unidad_academica_id = u.id_unidad_academica
+                            WHERE f.usuario_rut = %s;
+                        """, (rut,))
+        else:
+            cur.execute("""
+                    SELECT DISTINCT u.id_unidad_academica, u.nombre
+                    FROM Subdirector f
+                    JOIN UnidadAcademica u ON f.unidad_academica_id = u.id_unidad_academica
+                    JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+                    WHERE f.usuario_rut = %s AND e.id_emplazamiento = %s;
+                """, (rut, id_emplazamiento))
     else:
-        raise ValueError("Rol no válido")
+        raise ValueError("Rol no válido, endpoint válido solo para funcionarios y subdirección")
 
     rows = cur.fetchall()
     cur.close()

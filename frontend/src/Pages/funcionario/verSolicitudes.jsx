@@ -15,7 +15,7 @@ export function VerSolicitudesF({ rut }) {
         // Obtener unidades académicas disponibles
         const fetchUnidades = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/ingeniero/unidad-academica`);
+                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/funcionario/unidad-academica`);
                 setUnidades(response.data);
             } catch (err) {
                 setError(

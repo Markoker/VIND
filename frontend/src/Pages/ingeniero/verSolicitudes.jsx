@@ -34,7 +34,7 @@ export function VerSolicitudesI({ rut }) {
             try {
 
                 const url = emplazamientoId
-                    ? `http://localhost:8000/solicitudes/${rut}?unidad_academica_id=${emplazamientoId}`
+                    ? `http://localhost:8000/solicitudes/ingeniero/${rut}?emplazamiento_id=${emplazamientoId}`
                     : `http://localhost:8000/solicitudes/ingeniero/${rut}`;
                 const response = await axios.get(url);
                 setSolicitudes(response.data);
@@ -54,7 +54,7 @@ export function VerSolicitudesI({ rut }) {
             {error && <p style={{color: "red"}}>{error}</p>}
 
             <div>
-                <label htmlFor="unidadAcademica">Filtrar por Unidad Académica:</label>
+                <label htmlFor="unidadAcademica">Filtrar por Emplazamiento:</label>
                 <select
                     id="unidadAcademica"
                     value={emplazamientoId || ""}

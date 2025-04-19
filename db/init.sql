@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS AsignaturaSolicitud CASCADE;
 
 -- 1. Usuario
 CREATE TABLE Usuario (
-    rut CHAR(10) PRIMARY KEY,
+    rut VARCHAR(10) PRIMARY KEY,
     email VARCHAR(254) UNIQUE NOT NULL,
     first_name VARCHAR(30),
     last_name VARCHAR(30),
@@ -50,7 +50,7 @@ CREATE TABLE UnidadAcademica (
 CREATE TABLE Funcionario (
     id SERIAL PRIMARY KEY,
     usuario_rut CHAR(10) NOT NULL,
-    INT NOT NULL,
+    unidad_academica_id INT NOT NULL,
     FOREIGN KEY (usuario_rut) REFERENCES Usuario(rut),
     FOREIGN KEY (unidad_academica_id) REFERENCES UnidadAcademica(id_unidad_academica)
 );

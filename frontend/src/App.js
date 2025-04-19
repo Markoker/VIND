@@ -8,7 +8,6 @@ import { Login } from './Pages/Login/Login';
 import { SelectProfile } from './Pages/selectProfile';
 import { VerSolicitudesF } from './Pages/funcionario/verSolicitudes'
 import { VerSolicitudesI } from './Pages/ingeniero/verSolicitudes'
-// import { VerSolicitudesI } from './Pages/ingeniero/verSolicitudes'
 
 import { Dashboard } from './Pages/Dashboard';
 import { DashboardFuncionario } from './Pages/funcionario/dashboard-funcionario';
@@ -34,6 +33,7 @@ import { PrivateRoute } from './PrivateRoute';
 import { Logout } from './Pages/Login/logout';
 import {Encargados} from "./Pages/funcionario/solicitud/encargados";
 import {DashboardIngeniero} from "./Pages/ingeniero/dashboard-ingeniero";
+import {SolicitudI} from "./Pages/ingeniero/solicitud/solicitudI";
 
 function App() {
   return (
@@ -53,32 +53,6 @@ function App() {
         }
       />
 
-      <Route
-        path="/ingeniero/dashboard"
-        element={
-          <PrivateRoute allowedRoles={["ingeniero"]}>
-            <DashboardIngeniero />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-        path="/dashboard-contador"
-        element={
-          <PrivateRoute allowedRoles={["contador"]}>
-            <DashboardContador />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-          path="/dashboard-jefe"
-          element={
-              <PrivateRoute allowedRoles={["jefe"]}>
-                  <DashboardJefe />
-              </PrivateRoute>
-          }
-      />
       <Route
           path="/funcionario/solicitudes"
           element={
@@ -121,21 +95,22 @@ function App() {
       />
 
       <Route
-          path="/ingeniero/solicitudes"
-          element={
-              <PrivateRoute allowedRoles={["ingeniero"]}>
-                  <VerSolicitudesI />
-              </PrivateRoute>
-          }
+        path="/ingeniero/dashboard"
+        element={
+          <PrivateRoute allowedRoles={["ingeniero"]}>
+            <DashboardIngeniero />
+          </PrivateRoute>
+        }
       />
-        <Route
-            path="/ingeniero/solicitudes/{id_solicitud}"
-            element={
-                <PrivateRoute allowedRoles={["ingeniero"]}>
-                    <SolicitudI />
-                </PrivateRoute>
-            }
-        />
+
+      <Route
+        path="/ingeniero/solicitudes"
+        element={
+          <PrivateRoute allowedRoles={["ingeniero"]}>
+            <VerSolicitudesI />
+          </PrivateRoute>
+        }
+      />
 
       <Route
           path="/logout"

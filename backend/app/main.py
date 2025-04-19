@@ -128,6 +128,7 @@ def signup(usuario: UsuarioCreate):
             email = usuario.email,
             password = usuario.password
         )
+        print(nuevo_usuario)
         return {"message": f"Usuario creado con rut {nuevo_usuario}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -170,7 +171,7 @@ def obtener_solicitudes():
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @solicitud_router.get("/funcionario/{rut}")
-def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
+def obtener_solicitudes_funcionario(rut: str, unidad_academica_id: Optional[int] = None):
     try:
         solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id, query_from="funcionario")
         if solicitudes:
@@ -180,11 +181,13 @@ def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @solicitud_router.get("/ingeniero/{rut}")
-def obtener_solicitudes(rut: str, unidad_academica_id: Optional[int] = None):
+def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = None):
     try:
-        # Get emplazamientos for the user
-        emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
-        emplazamiento_ids = [emplazamiento["id"] for emplazamiento in emplazamientos]
+        if not emplazamiento_id:
+            emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
+            emplazamiento_ids = [emplazamiento["id"] for emplazamiento in emplazamientos]
+        else:
+            emplazamiento_ids = [emplazamiento_id]
 
         solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
 
@@ -239,7 +242,7 @@ def obtener_usuario(rut: str):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @user_router.get("/{rut}/rol")
-def obtener_usuario(rut: str):
+def obtener_roles_usuario(rut: str):
     try:
         roles = Usuario.getRolesUsuario(rut)
         if roles:
@@ -249,7 +252,7 @@ def obtener_usuario(rut: str):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @user_router.get("/{rut}/rol/{rol}")
-def obtener_usuario(rut: str,
+def obtener_rol_usuario(rut: str,
                     rol: str):
     try:
         isRol = Usuario.getRolesUsuario(rut, query_type="by_rol", rol=rol)
@@ -260,7 +263,7 @@ def obtener_usuario(rut: str,
 
 
 @user_router.get("/{rut}/rol/{rol}/emplazamiento")
-def obtenerEmplazamientosPorRol(rut: str, rol: str):
+def obtener_emplazamientos_por_rol(rut: str, rol: str):
     try:
         rows = Usuario.getRolEmplacements(rut, rol)
 
@@ -273,7 +276,7 @@ def obtenerEmplazamientosPorRol(rut: str, rol: str):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @user_router.get("/{rut}/rol/{rol}/unidad-academica")
-def obtenerUnidadesPorRol(rut: str, rol: str):
+def obtener_unidades_por_rol(rut: str, rol: str):
     try:
         rows = Usuario.getRolDeptos(rut, rol)
 
@@ -286,7 +289,7 @@ def obtenerUnidadesPorRol(rut: str, rol: str):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @user_router.get("/{rut}/rol/{rol}/emplazamiento/{emplazamiento_id}/unidad-academica")
-def obtenerEmplazamientosPorRol(rut: str, rol: str, emplazamiento_id: int):
+def obtener_unidades_por_rol_y_emplazamiento(rut: str, rol: str, emplazamiento_id: int):
     try:
         rows = Usuario.getRolDeptos(rut, rol, emplazamiento_id)
 
