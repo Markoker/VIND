@@ -16,8 +16,8 @@ import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
 import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 
-import { DashboardContador } from './Pages/contador/Dashboard-contador';
-import { DashboardJefe } from './Pages/jefe/Dashboard-jefe';
+// import { DashboardContador } from './Pages/contador/Dashboard-contador';
+// import { DashboardJefe } from './Pages/jefe/Dashboard-jefe';
 /*
 import { DashboardContador } from './Pages/contador/Dashboard-contador';
 import { DashboardTrabajador } from './Pages/trabajador/Dashboard-trabajador';

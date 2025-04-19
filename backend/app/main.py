@@ -181,19 +181,25 @@ def obtener_solicitudes_funcionario(rut: str, unidad_academica_id: Optional[int]
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 @solicitud_router.get("/ingeniero/{rut}")
-def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = None):
+def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = None, unidad_academica_id: Optional[int] = None):
+    print("→ FILTROS RECIBIDOS")
+    print("RUT:", rut)
+    print("emplazamiento_id:", emplazamiento_id)
+    print("unidad_academica_id:", unidad_academica_id)
     try:
-        if not emplazamiento_id:
-            emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
-            emplazamiento_ids = [emplazamiento["id"] for emplazamiento in emplazamientos]
+        if unidad_academica_id:
+            solicitudes = Solicitud.GetPorUnidadYEmplazamiento(
+                rut,
+                unidad_academica_id=unidad_academica_id,
+                emplazamiento_id=emplazamiento_id
+            )
+        elif emplazamiento_id:
+            solicitudes = Solicitud.GetAllIngeniero([emplazamiento_id])
         else:
-            emplazamiento_ids = [emplazamiento_id]
-
-        solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
-
-        if solicitudes:
-            return solicitudes
-        raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
+            emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
+            emplazamiento_ids = [e["id"] for e in emplazamientos]
+            solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
+        return solicitudes
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

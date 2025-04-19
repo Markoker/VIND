@@ -7,6 +7,9 @@ export function VerSolicitudesI({ rut }) {
     const [emplazamientoId, setEmplazamientoId] = useState(null);
     const [emplazamientos, setEmplazamientos] = useState([]);
     const [error, setError] = useState("");
+    // filtro por unidad academica
+    const [unidadId, setUnidadId] = useState(null);
+    const [unidades, setUnidades] = useState([]);
     const navigate = useNavigate();
 
     rut = localStorage.getItem("userRut");
@@ -32,10 +35,16 @@ export function VerSolicitudesI({ rut }) {
     useEffect(() => {
         const fetchSolicitudes = async () => {
             try {
+                let url = `http://localhost:8000/solicitudes/ingeniero/${rut}`;
+                const params = new URLSearchParams();
 
-                const url = emplazamientoId
-                    ? `http://localhost:8000/solicitudes/ingeniero/${rut}?emplazamiento_id=${emplazamientoId}`
-                    : `http://localhost:8000/solicitudes/ingeniero/${rut}`;
+                if (emplazamientoId) params.append("emplazamiento_id", emplazamientoId);
+                if (unidadId !== null && unidadId !== "") {
+                    params.append("unidad_academica_id", unidadId);
+                }                
+
+                url += `?${params.toString()}`;
+
                 const response = await axios.get(url);
                 setSolicitudes(response.data);
             } catch (err) {
@@ -46,7 +55,28 @@ export function VerSolicitudesI({ rut }) {
         };
 
         fetchSolicitudes();
-    }, [rut, emplazamientoId]);
+    }, [rut, emplazamientoId, unidadId]);
+
+    useEffect(() => {
+        if (!emplazamientoId) {
+            setUnidades([]);
+            setUnidadId(null);
+            return;
+        }
+    
+        const fetchUnidades = async () => {
+            try {
+                const response = await axios.get(
+                    `http://localhost:8000/emplazamiento/${emplazamientoId}/unidad_academica`
+                );
+                setUnidades(response.data);
+            } catch (err) {
+                setError("Error al obtener las unidades académicas.");
+            }
+        };
+    
+        fetchUnidades();
+    }, [emplazamientoId]);    
 
     return (
         <div>
@@ -62,6 +92,22 @@ export function VerSolicitudesI({ rut }) {
                 >
                     <option value="">Todas</option>
                     {emplazamientos.map((unidad) => (
+                        <option key={unidad.id} value={unidad.id}>
+                            {unidad.nombre}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <div>
+                <label htmlFor="unidadAcademica">Filtrar por Unidad Académica:</label>
+                <select
+                    id="unidadAcademica"
+                    value={unidadId || ""}
+                    onChange={(e) => setUnidadId(e.target.value || null)}
+                >
+                    <option value="">Todas</option>
+                    {unidades.map((unidad) => (
                         <option key={unidad.id} value={unidad.id}>
                             {unidad.nombre}
                         </option>

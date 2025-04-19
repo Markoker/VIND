@@ -206,3 +206,46 @@ def SaveAsignatura(id_solicitud, id_asignatura):
 
     conn.commit()
     cur.close()
+
+def GetPorUnidadYEmplazamiento(usuario_rut, unidad_academica_id, emplazamiento_id):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+
+    query = """
+        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion,
+               ARRAY_AGG(DISTINCT a.sigla) AS asignatura,
+               v.lugar,
+               e.nombre
+        FROM Solicitud s
+        INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
+        INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
+        INNER JOIN UnidadAcademica u ON a.departamento_id = u.id_unidad_academica
+        INNER JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+        INNER JOIN Visita v ON s.visita_id = v.id_visita
+        WHERE s.usuario_rut = %s
+          AND u.id_unidad_academica = %s
+          AND e.id_emplazamiento = %s
+        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre
+        ORDER BY s.fecha DESC
+    """
+
+    cur.execute(query, (usuario_rut, unidad_academica_id, emplazamiento_id))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "id_solicitud": row[0],
+            "fecha": row[1],
+            "estado": row[2],
+            "descripcion": row[3],
+            "asignatura": row[4],
+            "visita": row[5],
+            "emplazamiento": row[6]
+        }
+        for row in rows
+    ]

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sidebar } from '../sidebar';
+//import { Sidebar } from '../sidebar';
 import { Rendicion } from './MostrarRendiciones';
 import { RendicionesDevueltas } from './MostrarDevoluciones';
 
