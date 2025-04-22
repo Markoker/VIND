@@ -20,12 +20,6 @@ def get_connection():
         return None
 
 
-
-
-
-
-
-
 '''
 def getRendicionesParaTrabajador(trabajador_rut):
     conn = get_connection()

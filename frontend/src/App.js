@@ -16,6 +16,7 @@ import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
 import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 
+import { DetalleSolicitud } from './Pages/ingeniero/detalleSolicitud';
 // import { DashboardContador } from './Pages/contador/Dashboard-contador';
 // import { DashboardJefe } from './Pages/jefe/Dashboard-jefe';
 /*
@@ -108,6 +109,15 @@ function App() {
         element={
           <PrivateRoute allowedRoles={["ingeniero"]}>
             <VerSolicitudesI />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/ingeniero/solicitudes/:id"
+        element={
+          <PrivateRoute allowedRoles={["ingeniero"]}>
+            <DetalleSolicitud />
           </PrivateRoute>
         }
       />

@@ -203,6 +203,13 @@ def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = No
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+@solicitud_router.get("/{id_solicitud}")
+def get_solicitud_detalle(id_solicitud: int):
+    try:
+        return Solicitud.GetDetalle(id_solicitud)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.get("/unidades-academicas")
 def obtener_unidades_academicas():
     conn = get_connection()

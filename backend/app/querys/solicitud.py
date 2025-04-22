@@ -249,3 +249,113 @@ def GetPorUnidadYEmplazamiento(usuario_rut, unidad_academica_id, emplazamiento_i
         }
         for row in rows
     ]
+
+def GetDetalle(id_solicitud):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Primero obtenemos los datos base
+    query = """
+        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion,
+               u.rut, u.first_name, u.last_name,
+               v.nombre_empresa, v.fecha, v.lugar,
+               ARRAY_AGG(DISTINCT a.sigla) AS asignaturas,
+               c.tipo, c.estado, c.monto, c.traslado_id, c.colacion_id
+        FROM Solicitud s
+        INNER JOIN Usuario u ON s.usuario_rut = u.rut
+        INNER JOIN Visita v ON s.visita_id = v.id_visita
+        INNER JOIN AsignaturaSolicitud sa ON sa.solicitud_id = s.id_solicitud
+        INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
+        LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+        WHERE s.id_solicitud = %s
+        GROUP BY s.id_solicitud, u.rut, u.first_name, u.last_name,
+                 v.nombre_empresa, v.fecha, v.lugar,
+                 c.tipo, c.estado, c.monto, c.traslado_id, c.colacion_id
+    """
+    cur.execute(query, (id_solicitud,))
+    row = cur.fetchone()
+
+    if not row:
+        cur.close()
+        conn.close()
+        return None
+
+    detalle = {
+        "id": row[0],
+        "fecha": row[1],
+        "estado": row[2],
+        "descripcion": row[3],
+        "usuario": {
+            "rut": row[4],
+            "nombre": f"{row[5]} {row[6]}"
+        },
+        "visita": {
+            "empresa": row[7],
+            "fecha": row[8],
+            "lugar": row[9]
+        },
+        "asignaturas": row[10],
+        "cotizacion": {
+            "tipo": row[11],
+            "estado": row[12],
+            "monto": row[13],
+            "traslado": None,
+            "colacion": None
+        }
+    }
+
+    # Si hay traslado asociado
+    traslado_id = row[14]
+    if traslado_id:
+        cur.execute("""
+            SELECT nombre_proveedor, rut_proveedor, correo_proveedor,
+                   monto, cotizacion_1, cotizacion_2, cotizacion_3
+            FROM Traslado WHERE id = %s
+        """, (traslado_id,))
+        t = cur.fetchone()
+        if t:
+            detalle["cotizacion"]["traslado"] = {
+                "nombre_proveedor": t[0],
+                "rut_proveedor": t[1],
+                "correo_proveedor": t[2],
+                "monto": t[3],
+                "cotizaciones": [t[4], t[5], t[6]]
+            }
+
+    # Si hay colación asociada
+    colacion_id = row[15]
+    if colacion_id:
+        cur.execute("""
+            SELECT tipo_subvencion, nombre_proveedor, rut_proveedor, correo_proveedor,
+                   monto, cotizacion_1, cotizacion_2, cotizacion_3, reembolso_id
+            FROM Colacion WHERE id = %s
+        """, (colacion_id,))
+        c = cur.fetchone()
+        if c:
+            colacion_info = {
+                "tipo_subvencion": c[0],
+                "nombre_proveedor": c[1],
+                "rut_proveedor": c[2],
+                "correo_proveedor": c[3],
+                "monto": c[4],
+                "cotizaciones": [c[5], c[6], c[7]]
+            }
+
+            # Si es reembolso, obtener los datos del reembolso
+            if c[8]:
+                cur.execute("""
+                    SELECT monto, fecha_pago, estado FROM Reembolso WHERE id_reembolso = %s
+                """, (c[8],))
+                r = cur.fetchone()
+                if r:
+                    colacion_info["reembolso"] = {
+                        "monto": r[0],
+                        "fecha_pago": r[1],
+                        "estado": r[2]
+                    }
+
+            detalle["cotizacion"]["colacion"] = colacion_info
+
+    cur.close()
+    conn.close()
+    return detalle

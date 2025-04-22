@@ -137,7 +137,7 @@ export function VerSolicitudesI({ rut }) {
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
                         <td>{solicitud.visita}</td>
-                        <td><a href={`/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
+                        <td><a href={`/ingeniero/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
                     </tr>
                 ))}
                 </tbody>
