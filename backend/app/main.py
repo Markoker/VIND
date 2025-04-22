@@ -56,7 +56,6 @@ emplazamiento_router = APIRouter(prefix="/emplazamiento", tags=["emplazamiento"]
 asignatura_router = APIRouter(prefix="/asignatura", tags=["asignatura"])
 visita_router = APIRouter(prefix="/visita", tags=["visita"])
 
-
 @solicitud_router.post("/")
 async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
     try:
@@ -209,6 +208,33 @@ def get_solicitud_detalle(id_solicitud: int):
         return Solicitud.GetDetalle(id_solicitud)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar")
+def aprobar_solicitud(id_solicitud: int, RUT: str):
+    try:
+        Solicitud.CambiarEstado(id_solicitud, 1)
+        return {"message": "Solicitud aprobada"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar")
+def aprobar_solicitud(id_solicitud: int, RUT: str):
+    try:
+        Solicitud.CambiarEstado(RUT, id_solicitud, 1)
+        return {"message": "Solicitud aprobada"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/rechazar")
+def aprobar_solicitud(id_solicitud: int, RUT: str, comentario: str):
+    try:
+        Solicitud.CambiarEstado(RUT, id_solicitud, 0, comentario)
+        return {"message": "Solicitud rechazada"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+
 
 @app.get("/unidades-academicas")
 def obtener_unidades_academicas():

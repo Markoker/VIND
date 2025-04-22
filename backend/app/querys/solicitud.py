@@ -359,3 +359,57 @@ def GetDetalle(id_solicitud):
     cur.close()
     conn.close()
     return detalle
+
+def CambiarEstado(RUT, id_solicitud, decision, comentario=""):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+
+    estados = [
+        {
+            0:0,
+            1:0,
+            2:0,
+            3:0,
+            4:1,
+            5:5,
+            6:6,
+        },
+        {
+            0:0,
+            1:3,
+            2:3,
+            3:4,
+            5:6,
+            6:6
+        }
+    ]
+
+    query = """
+        SELECT estado FROM Solicitud WHERE id_solicitud = %s;
+    """
+    cur.execute(query, (id_solicitud,))
+    estado_actual = cur.fetchone()[0]
+
+    query = """
+        UPDATE Solicitud
+        SET estado = %s
+        WHERE id_solicitud = %s;
+    """
+
+    cur.execute(query, (estados[decision][estado_actual], id_solicitud))
+
+    query = """
+        INSERT INTO HistorialEstadoSolicitud (id_solicitud, fecha, estado, usuario_rut, comentario)
+        VALUES (%s, NOW(), %s, %s, %s);
+    """
+
+    cur.execute(query, (id_solicitud, estados[decision][estado_actual], RUT, comentario))
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+

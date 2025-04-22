@@ -111,6 +111,7 @@ CREATE TABLE Visita (
     profesor_id INT NOT NULL,
     FOREIGN KEY (profesor_id) REFERENCES Profesor(id_profesor)
 );
+
 -- 13. Traslado
 CREATE TABLE Traslado (
     id SERIAL PRIMARY KEY,
@@ -161,10 +162,19 @@ CREATE TABLE Cotizacion (
 );
 
 -- 11. Solicitud
+-- Estados:
+-- 0: Rechazada
+-- 1: En revisión
+-- 2: Revisión de requisitos
+-- 3: Autorización de presupuesto
+-- 4: Firma de cotización
+-- 5: Orden de compra
+-- 6: Aprobada
+
 CREATE TABLE Solicitud (
     id_solicitud SERIAL PRIMARY KEY,
     fecha DATE NOT NULL DEFAULT CURRENT_DATE,
-    estado INT DEFAULT 2 CHECK (estado BETWEEN 0 AND 5),
+    estado INT DEFAULT 2 CHECK (estado BETWEEN 0 AND 6),
     descripcion TEXT NOT NULL,
     usuario_rut CHAR(10) NOT NULL,
     visita_id INT NOT NULL,
@@ -189,7 +199,8 @@ CREATE TABLE HistorialEstadoSolicitud (
     usuario_decision_rut CHAR(10) NOT NULL,
     solicitud_id INT NOT NULL,
     estado_anterior INT NOT NULL CHECK (estado_anterior BETWEEN 0 AND 5),
-    decision VARCHAR(10) NOT NULL CHECK (decision IN ('aprobada', 'rechazada')),
+    decision INT NOT NULL CHECK (decision IN (1, 0)),
+    comentario TEXT,
     fecha_decision DATE NOT NULL,
     FOREIGN KEY (usuario_decision_rut) REFERENCES Usuario(rut),
     FOREIGN KEY (solicitud_id) REFERENCES Solicitud(id_solicitud)
