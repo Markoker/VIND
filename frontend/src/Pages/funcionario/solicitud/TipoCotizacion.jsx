@@ -33,26 +33,67 @@ export function TipoCotizacion() {
 
     const handleNext = async () => {
         try {
-            const datosVisita = JSON.parse(localStorage.getItem("datosVisita")) || location.state?.visita || {};
-            const datosAsignaturas = JSON.parse(localStorage.getItem("asignaturasSeleccionadas")) || location.state?.asignaturas || [];
-            const listadoAsistentes = JSON.parse(localStorage.getItem("listadoAsistentes")) || location.state?.asistentes || [];
-
-            const solicitud = {
-                visita: datosVisita,
-                asignaturas: datosAsignaturas,
-                asistentes: listadoAsistentes,
-                cotizacion,
+          const datosVisita = JSON.parse(localStorage.getItem("datosVisita")) || location.state?.visita || {};
+          const datosAsignaturas = JSON.parse(localStorage.getItem("asignaturasSeleccionadas")) || location.state?.asignaturas || [];
+          const asistentes = JSON.parse(localStorage.getItem("listadoAsistentes")) || location.state?.asistentes || [];
+          const encargados = JSON.parse(localStorage.getItem("encargados")) || location.state?.encargados || [];
+          const totalAsistentes = asistentes.length || Number(localStorage.getItem("totalAsistentes")) || 1;
+      
+          const cotizacionNormalizada = {
+            tipo: cotizacion.tipo,
+            monto: 0
+          };
+      
+          if (cotizacion.tipo.includes("colacion")) {
+            const monto = Number(cotizacion.montoColacion);
+            cotizacionNormalizada.monto += monto;
+            cotizacionNormalizada.colacion = {
+              nombre_proveedor: cotizacion.proveedorColacion.nombre,
+              rut_proveedor: cotizacion.proveedorColacion.rut,
+              correo_proveedor: cotizacion.proveedorColacion.email,
+              monto: monto,
+              tipo_subvencion: cotizacion.tipoPresupuestacion,
+              cotizacion_1: null,
+              cotizacion_2: null,
+              cotizacion_3: null,
+              asistentes: totalAsistentes
             };
-
-            await axios.post("http://localhost:8000/solicitudes", solicitud);
-            alert("La solicitud fue enviada");
-            navigate("/funcionario/dashboard");
+          }
+      
+          if (cotizacion.tipo.includes("traslado")) {
+            const monto = Number(cotizacion.montoTraslado);
+            cotizacionNormalizada.monto += monto;
+            cotizacionNormalizada.traslado = {
+              nombre_proveedor: cotizacion.proveedorTraslado.nombre,
+              rut_proveedor: cotizacion.proveedorTraslado.rut,
+              correo_proveedor: cotizacion.proveedorTraslado.email,
+              monto: monto,
+              cotizacion_1: null,
+              cotizacion_2: null,
+              cotizacion_3: null
+            };
+          }
+      
+          const solicitud = {
+            descripcion: datosVisita.descripcion,
+            usuario_rut: localStorage.getItem("userRut"),
+            asignatura_id: datosAsignaturas[0]?.id || datosAsignaturas[0]?.asignatura_id || 1,
+            visita: datosVisita,
+            cotizacion: cotizacionNormalizada
+          };
+      
+          console.log("Enviando solicitud:", solicitud);
+      
+          await axios.post("http://localhost:8000/solicitudes", solicitud);
+          alert("La solicitud fue enviada correctamente");
+          navigate("/funcionario/dashboard");
         } catch (error) {
-            console.error("Error al enviar la solicitud:", error);
-            alert("Hubo un error al enviar la solicitud. Por favor, inténtelo de nuevo.");
+          console.error("Error al enviar la solicitud:", error.response?.data || error.message);
+          alert("Hubo un error al enviar la solicitud. Por favor, inténtelo de nuevo.");
         }
     };
-
+      
+        
     const handleMontoColacionChange = (e) => {
         const montoColacion = e.target.value;
         setError("");

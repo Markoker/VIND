@@ -83,6 +83,7 @@ async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
 
         return {"id_solicitud": solicitud_id, "message": "Solicitud creada exitosamente"}
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/visitantes")

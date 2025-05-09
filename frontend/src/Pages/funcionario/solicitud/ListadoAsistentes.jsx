@@ -44,7 +44,9 @@ export function ListadoAsistentes() {
         });
         };
     const handleNext = () => {
-        navigate("/funcionario/crear-solicitud/cotizacion", {
+        localStorage.setItem("listadoAsistentes", JSON.stringify(asistentes));
+        localStorage.setItem("totalAsistentes", asistentes.length);
+        navigate("/funcionario/crear-solicitud/encargados", {
             state: { ...location.state, asistentes, totalAsistentes },
         });
     };

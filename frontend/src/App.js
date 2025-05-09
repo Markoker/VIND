@@ -13,7 +13,7 @@ import { Dashboard } from './Pages/Dashboard';
 import { DashboardFuncionario } from './Pages/funcionario/dashboard-funcionario';
 import { DatosAsignatura } from './Pages/funcionario/solicitud/DatosAsignatura';
 import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
-import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
+//import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 
 import { DetalleSolicitud } from './Pages/ingeniero/detalleSolicitud';

@@ -58,23 +58,48 @@ export function Encargados() {
         });
     };
 
-    const handleEnviarDatos = () => {
-        const asistentes = encargadosSeleccionados;
+    const handleEnviarDatos = async () => {
+        const encargados = encargadosSeleccionados;
         const visita = JSON.parse(localStorage.getItem("datosVisita"));
         const asignaturas = JSON.parse(localStorage.getItem("asignaturasSeleccionadas"));
-
-        localStorage.setItem("listadoAsistentes", JSON.stringify(asistentes));
-
-        navigate("/funcionario/crear-solicitud/cotizacion", {
+        const asistentes = JSON.parse(localStorage.getItem("listadoAsistentes")) || [];
+      
+        try {
+          const response = await axios.get(`http://localhost:8000/visita/profesores`);
+          const profesores = response.data;
+      
+          const encargadoProfesor = encargados.find(encargado =>
+            profesores.some(p => p.rut.trim() === encargado.rut.trim())
+          );
+      
+          if (!encargadoProfesor) {
+            alert("Debe haber al menos un encargado registrado como profesor.");
+            return;
+          }
+      
+          const profesor = profesores.find(p => p.rut.trim() === encargadoProfesor.rut.trim());
+          const visitaActualizada = { ...visita, profesor_id: profesor.id_profesor };
+      
+          // Guardar
+          localStorage.setItem("datosVisita", JSON.stringify(visitaActualizada));
+          localStorage.setItem("encargados", JSON.stringify(encargados));
+      
+          navigate("/funcionario/crear-solicitud/cotizacion", {
             state: {
-                asistentes,
-                visita,
-                asignaturas,
-                totalAsistentes: asistentes.length
+              asistentes,
+              encargados,
+              asignaturas,
+              visita: visitaActualizada,
+              totalAsistentes: asistentes.length
             }
-        });
+          });
+        } catch (error) {
+          console.error("Error al buscar profesor:", error);
+          alert("No se pudo verificar el profesor. Intenta nuevamente.");
+        }
     };
-
+      
+      
     return (
         <div>
             <label>
