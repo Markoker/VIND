@@ -34,6 +34,21 @@ def getProfesores():
     conn.close()
     return rows
 
+# TEMPORAL: crear un encargado 
+def saveProfesor(data):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    query = "INSERT INTO Profesor (rut, nombre, email) VALUES (%s, %s, %s) RETURNING id_profesor;"
+    cur.execute(query, (data["rut"], data["nombre"], data["email"]))
+    id_profesor = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return id_profesor
+
 def SaveVisitanteList(visita_id, asistentes):
     # asistentes: Lista de diccionarios con los datos de los asistentes.
     conn = get_connection()

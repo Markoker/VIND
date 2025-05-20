@@ -15,7 +15,7 @@ import { DatosAsignatura } from './Pages/funcionario/solicitud/DatosAsignatura';
 import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
 //import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
-
+import { Presupuestos } from './Pages/Presupuesto';
 import { DetalleSolicitud } from './Pages/ingeniero/detalleSolicitud';
 // import { DashboardContador } from './Pages/contador/Dashboard-contador';
 // import { DashboardJefe } from './Pages/jefe/Dashboard-jefe';
@@ -118,6 +118,15 @@ function App() {
         element={
           <PrivateRoute allowedRoles={["ingeniero"]}>
             <DetalleSolicitud />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/presupuestos"
+        element={
+          <PrivateRoute allowedRoles={["funcionario", "ingeniero"]}>
+            <Presupuestos />
           </PrivateRoute>
         }
       />

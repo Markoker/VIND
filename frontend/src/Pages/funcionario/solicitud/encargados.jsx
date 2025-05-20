@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export function Encargados() {
     const [numEncargados, setNumEncargados] = useState(1);
@@ -63,43 +64,78 @@ export function Encargados() {
         const visita = JSON.parse(localStorage.getItem("datosVisita"));
         const asignaturas = JSON.parse(localStorage.getItem("asignaturasSeleccionadas"));
         const asistentes = JSON.parse(localStorage.getItem("listadoAsistentes")) || [];
-      
-        try {
-          const response = await axios.get(`http://localhost:8000/visita/profesores`);
-          const profesores = response.data;
-      
-          const encargadoProfesor = encargados.find(encargado =>
-            profesores.some(p => p.rut.trim() === encargado.rut.trim())
-          );
-      
-          if (!encargadoProfesor) {
-            alert("Debe haber al menos un encargado registrado como profesor.");
+
+        // Validación básica
+        if (encargados.length === 0 || encargados.some(e => !e.rut || !e.nombre || !e.correo)) {
+            alert("Todos los encargados deben tener nombre, correo y RUT.");
             return;
-          }
-      
-          const profesor = profesores.find(p => p.rut.trim() === encargadoProfesor.rut.trim());
-          const visitaActualizada = { ...visita, profesor_id: profesor.id_profesor };
-      
-          // Guardar
-          localStorage.setItem("datosVisita", JSON.stringify(visitaActualizada));
-          localStorage.setItem("encargados", JSON.stringify(encargados));
-      
-          navigate("/funcionario/crear-solicitud/cotizacion", {
-            state: {
-              asistentes,
-              encargados,
-              asignaturas,
-              visita: visitaActualizada,
-              totalAsistentes: asistentes.length
+        }
+
+        try {
+            const response = await axios.get("http://localhost:8000/visita/profesores");
+            let profesores = response.data;
+
+            let primerProfesor = null;
+
+            for (const encargado of encargados) {
+                const rutEncargado = encargado.rut?.trim();
+                const nombreEncargado = `${encargado.nombre?.trim() || ""} ${encargado.apellido?.trim() || ""}`;
+                const correoEncargado = encargado.correo?.trim();
+
+                if (!rutEncargado || !nombreEncargado || !correoEncargado) {
+                    continue;
+                }
+
+                let encontrado = profesores.find(
+                    p => p?.rut && p.rut.trim() === rutEncargado
+                );
+
+                if (!encontrado) {
+                    const nuevo = await axios.post("http://localhost:8000/visita/profesores", {
+                        rut: rutEncargado,
+                        nombre: nombreEncargado,
+                        email: correoEncargado
+                    });
+
+                    encontrado = {
+                        id_profesor: nuevo.data.id_profesor,
+                        rut: rutEncargado,
+                        nombre: nombreEncargado,
+                        email: correoEncargado
+                    };
+                    profesores.push(encontrado);
+                }
+
+                if (!primerProfesor) {
+                    primerProfesor = encontrado;
+                }
             }
-          });
+
+            if (!primerProfesor) {
+                alert("Debe haber al menos un encargado válido.");
+                return;
+            }
+
+            const visitaActualizada = { ...visita, profesor_id: primerProfesor.id_profesor };
+            localStorage.setItem("datosVisita", JSON.stringify(visitaActualizada));
+            localStorage.setItem("encargados", JSON.stringify(encargados));
+
+            navigate("/funcionario/crear-solicitud/cotizacion", {
+                state: {
+                    asistentes,
+                    encargados,
+                    asignaturas,
+                    visita: visitaActualizada,
+                    totalAsistentes: asistentes.length
+                }
+            });
+
         } catch (error) {
-          console.error("Error al buscar profesor:", error);
-          alert("No se pudo verificar el profesor. Intenta nuevamente.");
+            console.error("Error al procesar encargados:", error);
+            alert("Hubo un error al verificar o crear profesores.");
         }
     };
-      
-      
+
     return (
         <div>
             <label>

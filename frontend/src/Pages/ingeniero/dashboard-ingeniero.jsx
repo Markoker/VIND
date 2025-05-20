@@ -18,6 +18,9 @@ export function DashboardIngeniero() {
             <div>
                 <Link to="/ingeniero/solicitudes">Ver Solicitudes</Link>
             </div>
+            <div>
+                <Link to="/presupuestos">Ver Presupuestos</Link>
+            </div>
             <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>
     );

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ import querys.solicitud as Solicitud
 import querys.visita as Visita
 import querys.usuario as Usuario
 import querys.asignatura as Asignatura
+import querys.presupuesto as Presupuesto
 
 app = FastAPI()
 
@@ -55,6 +56,7 @@ solicitud_router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 emplazamiento_router = APIRouter(prefix="/emplazamiento", tags=["emplazamiento"])
 asignatura_router = APIRouter(prefix="/asignatura", tags=["asignatura"])
 visita_router = APIRouter(prefix="/visita", tags=["visita"])
+presupuesto_router = APIRouter(prefix="/presupuestos", tags=["presupuestos"])
 
 @solicitud_router.post("/")
 async def crear_solicitud_endpoint(data: CrearSolicitudRequest):
@@ -94,6 +96,24 @@ async def guardar_visitantes_endpoint(visita_id: int, asistentes: list):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al guardar asistentes: {str(e)}")
 
+# TEMPORAL: crear un encargado de visita
+@visita_router.post("/profesores")
+async def create_profesor(data: dict = Body(...)):
+    try:
+        profesor_id = Visita.saveProfesor(data)
+        return {"id_profesor": profesor_id}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@presupuesto_router.get("/{rut}")
+async def get_presupuestos_usuario(rut: str, perfil: str = Query(...)):
+    try:
+        resultados = Presupuesto.getPresupuestosPorPerfil(rut, perfil)
+        if resultados:
+            return resultados
+        raise HTTPException(status_code=404, detail="No se encontraron presupuestos.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 #El status enta en el puerto 8000
@@ -421,7 +441,8 @@ app.include_router(user_router)
 app.include_router(solicitud_router)
 app.include_router(emplazamiento_router)
 app.include_router(asignatura_router)
-
+app.include_router(visita_router)
+app.include_router(presupuesto_router)
 '''
 @app.get("/rendiciones/resumen", response_model=DineroResumen)
 def calcular_dinero_resumen():

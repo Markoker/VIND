@@ -21,6 +21,9 @@ export function DashboardFuncionario() {
             <div>
                 <Link to="/funcionario/crear-solicitud/asignatura">Crear Solicitud</Link>
             </div>
+            <div>
+                <Link to="/presupuestos">Ver Presupuestos</Link>
+            </div>
             <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
         </div>
     );

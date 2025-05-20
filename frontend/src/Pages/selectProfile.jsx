@@ -42,19 +42,19 @@ export function SelectProfile(){
             <div className="home-content">
                 {isFuncionario && <div className="home-section">
                     <h2>Funcionario</h2>
-                    <Link to="/funcionario/dashboard" className="home-button">Ir a Funcionario</Link>
+                    <Link to="/funcionario/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "funcionario")}>Ir a Funcionario</Link>
                 </div>}
                 {isIngeniero && <div className="home-section">
                     <h2>Ingeniero</h2>
-                    <Link to="/ingeniero/dashboard" className="home-button">Ir a Ingeniero</Link>
+                    <Link to="/ingeniero/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "ingeniero")}>Ir a Ingeniero</Link>
                 </div>}
                 {isDirector && <div className="home-section">
                     <h2>Director</h2>
-                    <Link to="/dashboard-director" className="home-button">Ir a Director</Link>
+                    <Link to="/dashboard-director" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "director")}>Ir a Director</Link>
                 </div>}
                 {isSubdirector && <div className="home-section">
                     <h2>Subdirector</h2>
-                    <Link to="/dashboard-subdirector" className="home-button">Ir a Subdirector</Link>
+                    <Link to="/dashboard-subdirector" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "subdirector")}>Ir a Subdirector</Link>
                 </div>}
             </div>
         </div>

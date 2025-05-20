@@ -38,7 +38,8 @@ export function TipoCotizacion() {
           const asistentes = JSON.parse(localStorage.getItem("listadoAsistentes")) || location.state?.asistentes || [];
           const encargados = JSON.parse(localStorage.getItem("encargados")) || location.state?.encargados || [];
           const totalAsistentes = asistentes.length || Number(localStorage.getItem("totalAsistentes")) || 1;
-      
+
+          console.log("ASISTENTES:", asistentes);
           const cotizacionNormalizada = {
             tipo: cotizacion.tipo,
             monto: 0
@@ -79,7 +80,8 @@ export function TipoCotizacion() {
             usuario_rut: localStorage.getItem("userRut"),
             asignatura_id: datosAsignaturas[0]?.id || datosAsignaturas[0]?.asignatura_id || 1,
             visita: datosVisita,
-            cotizacion: cotizacionNormalizada
+            cotizacion: cotizacionNormalizada,
+            asistentes: asistentes
           };
       
           console.log("Enviando solicitud:", solicitud);
