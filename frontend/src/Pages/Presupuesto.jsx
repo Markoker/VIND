@@ -27,6 +27,7 @@ export function Presupuestos() {
         <thead>
           <tr className="bg-gray-100">
             <th className="p-2 border">Unidad Académica</th>
+            <th className="p-2 border">Emplazamiento</th> 
             <th className="p-2 border">Presupuesto Total</th>
             <th className="p-2 border">Gasto Actual</th>
             <th className="p-2 border">Disponible</th>
@@ -36,6 +37,7 @@ export function Presupuestos() {
           {presupuestos.map((unidad, idx) => (
             <tr key={idx}>
               <td className="p-2 border">{unidad.nombre}</td>
+              <td className="p-2 border">{unidad.emplazamiento}</td>
               <td className="p-2 border">${unidad.presupuesto.toLocaleString()}</td>
               <td className="p-2 border">${unidad.gasto.toLocaleString()}</td>
               <td className="p-2 border">${(unidad.presupuesto - unidad.gasto).toLocaleString()}</td>

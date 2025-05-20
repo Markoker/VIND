@@ -10,16 +10,17 @@ def getPresupuestosPorPerfil(rut, perfil):
 
     if perfil == "funcionario":
         cur.execute("""
-            SELECT ua.nombre, ua.presupuesto, ua.gasto
+            SELECT ua.nombre, ua.presupuesto, ua.gasto, e.nombre
             FROM Funcionario f
             JOIN UnidadAcademica ua ON ua.id_unidad_academica = f.unidad_academica_id
+            JOIN Emplazamiento e ON ua.emplazamiento_id = e.id_emplazamiento
             WHERE f.usuario_rut = %s
         """, (rut,))
     elif perfil in ["ingeniero", "director"]:
         cur.execute("""
-            SELECT DISTINCT ua.nombre, ua.presupuesto, ua.gasto
+            SELECT DISTINCT ua.nombre, ua.presupuesto, ua.gasto, e.nombre
             FROM UnidadAcademica ua
-            JOIN Emplazamiento e ON e.id_emplazamiento = ua.emplazamiento_id
+            JOIN Emplazamiento e ON ua.emplazamiento_id = e.id_emplazamiento
             WHERE e.id_emplazamiento IN (
                 SELECT emplazamiento_id FROM Ingeniero WHERE usuario_rut = %s
                 UNION
@@ -28,9 +29,10 @@ def getPresupuestosPorPerfil(rut, perfil):
         """, (rut, rut))
     elif perfil == "subdirector":
         cur.execute("""
-            SELECT ua.nombre, ua.presupuesto, ua.gasto
+            SELECT ua.nombre, ua.presupuesto, ua.gasto, e.nombre
             FROM Subdirector s
             JOIN UnidadAcademica ua ON ua.id_unidad_academica = s.unidad_academica_id
+            JOIN Emplazamiento e ON ua.emplazamiento_id = e.id_emplazamiento
             WHERE s.usuario_rut = %s
         """, (rut,))
     else:
@@ -42,4 +44,12 @@ def getPresupuestosPorPerfil(rut, perfil):
     cur.close()
     conn.close()
 
-    return [{"nombre": row[0], "presupuesto": row[1], "gasto": row[2]} for row in rows]
+    return [
+        {
+            "nombre": row[0],
+            "presupuesto": row[1],
+            "gasto": row[2],
+            "emplazamiento": row[3]
+        }
+        for row in rows
+    ]
