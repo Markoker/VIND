@@ -233,14 +233,6 @@ def get_solicitud_detalle(id_solicitud: int):
 @solicitud_router.post("/{id_solicitud}/{RUT}/aprobar")
 def aprobar_solicitud(id_solicitud: int, RUT: str):
     try:
-        Solicitud.CambiarEstado(id_solicitud, 1)
-        return {"message": "Solicitud aprobada"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar")
-def aprobar_solicitud(id_solicitud: int, RUT: str):
-    try:
         Solicitud.CambiarEstado(RUT, id_solicitud, 1)
         return {"message": "Solicitud aprobada"}
     except Exception as e:
@@ -253,9 +245,6 @@ def aprobar_solicitud(id_solicitud: int, RUT: str, comentario: str):
         return {"message": "Solicitud rechazada"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-
 
 @app.get("/unidades-academicas")
 def obtener_unidades_academicas():

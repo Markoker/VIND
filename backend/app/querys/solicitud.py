@@ -402,11 +402,11 @@ def CambiarEstado(RUT, id_solicitud, decision, comentario=""):
     cur.execute(query, (estados[decision][estado_actual], id_solicitud))
 
     query = """
-        INSERT INTO HistorialEstadoSolicitud (id_solicitud, fecha, estado, usuario_rut, comentario)
-        VALUES (%s, NOW(), %s, %s, %s);
+        INSERT INTO historialEstadoSolicitud 
+        ("solicitud_id", "estado_anterior", "decision", "usuario_decision_rut", "comentario", "fecha_decision")
+        VALUES (%s, %s, %s, %s, %s, CURRENT_DATE);
     """
-
-    cur.execute(query, (id_solicitud, estados[decision][estado_actual], RUT, comentario))
+    cur.execute(query, (id_solicitud, estado_actual, decision, RUT, comentario))
 
     conn.commit()
 

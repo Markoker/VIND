@@ -47,6 +47,17 @@ export function SolicitudI({ rut }) {
 
         fetchSolicitudes();
     }, [rut, emplazamientoId]);
+    
+
+    const estados = {
+        "0": "Rechazada",
+        "1": "En revisión",
+        "2": "Revisión de requisitos",
+        "3": "Autorización de presupuesto",
+        "4": "Firma de cotización",
+        "5": "Orden de compra",
+        "6": "Aprobada"
+    };
 
     return (
         <div>
@@ -86,7 +97,7 @@ export function SolicitudI({ rut }) {
                     <tr key={solicitud.id_solicitud}>
                         <td>{solicitud.id_solicitud}</td>
                         <td>{new Date(solicitud.fecha).toLocaleDateString()}</td>
-                        <td>{solicitud.estado}</td>
+                        <td>{estados[String(solicitud.estado)] || "Desconocido"}</td>
                         <td>{solicitud.descripcion}</td>
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>

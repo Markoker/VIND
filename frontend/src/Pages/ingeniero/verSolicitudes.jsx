@@ -76,7 +76,17 @@ export function VerSolicitudesI({ rut }) {
         };
     
         fetchUnidades();
-    }, [emplazamientoId]);    
+    }, [emplazamientoId]);
+    
+    const estados = {
+        0: "Rechazada",
+        1: "En revisión",
+        2: "Revisión de requisitos",
+        3: "Autorización de presupuesto",
+        4: "Firma de cotización",
+        5: "Orden de compra",
+        6: "Aprobada"
+    };
 
     return (
         <div>
@@ -132,7 +142,7 @@ export function VerSolicitudesI({ rut }) {
                     <tr key={solicitud.id_solicitud}>
                         <td>{solicitud.id_solicitud}</td>
                         <td>{new Date(solicitud.fecha).toLocaleDateString()}</td>
-                        <td>{solicitud.estado}</td>
+                        <td>{estados[Number(solicitud.estado)] || "Desconocido"}</td>
                         <td>{solicitud.descripcion}</td>
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
@@ -142,7 +152,7 @@ export function VerSolicitudesI({ rut }) {
                 ))}
                 </tbody>
             </table>
-            <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
+            <button className="volver-btn" onClick={() => navigate("/ingeniero/dashboard")}>Volver</button>
         </div>
     );
 }
