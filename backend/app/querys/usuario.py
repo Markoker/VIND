@@ -149,6 +149,13 @@ def getRolEmplacements(rut,
             JOIN Emplazamiento e ON i.emplazamiento_id = e.id_emplazamiento
             WHERE i.usuario_rut = %s;
         """, (rut,))
+    elif rol == "director":
+        cur.execute("""
+            SELECT DISTINCT e.id_emplazamiento, e.nombre, e.sigla
+            FROM Director d
+            JOIN Emplazamiento e ON d.emplazamiento_id = e.id_emplazamiento
+            WHERE d.usuario_rut = %s;
+        """, (rut,))
     else:
         raise ValueError("Rol no válido")
 
