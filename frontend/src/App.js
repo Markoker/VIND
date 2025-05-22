@@ -17,6 +17,8 @@ import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 import { Presupuestos } from './Pages/Presupuesto';
 import { DetalleSolicitud } from './Pages/ingeniero/detalleSolicitud';
+import { DashboardDirector } from './Pages/director/dashboard-director';
+import { VerSolicitudesD } from './Pages/director/verSolicitudesD';
 // import { DashboardContador } from './Pages/contador/Dashboard-contador';
 // import { DashboardJefe } from './Pages/jefe/Dashboard-jefe';
 /*
@@ -130,6 +132,24 @@ function App() {
           </PrivateRoute>
         }
       />
+
+      <Route
+        path="/director/dashboard"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <DashboardDirector />
+          </PrivateRoute>
+        }
+      /> 
+
+    <Route
+        path="/director/solicitudes"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <VerSolicitudesD />
+          </PrivateRoute>
+        }
+      /> 
 
       <Route
           path="/logout"

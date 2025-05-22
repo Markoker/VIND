@@ -50,7 +50,7 @@ export function SelectProfile(){
                 </div>}
                 {isDirector && <div className="home-section">
                     <h2>Director</h2>
-                    <Link to="/dashboard-director" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "director")}>Ir a Director</Link>
+                    <Link to="/director/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "director")}>Ir a Director</Link>
                 </div>}
                 {isSubdirector && <div className="home-section">
                     <h2>Subdirector</h2>
