@@ -248,7 +248,7 @@ def generar_profesores(n, visita_id):
     conn.commit()
     print("Profesores generados exitosamente.")
 
-def generar_solicitud(rut_usuario=None):
+def generar_solicitud(rut_usuario=None, estado=2):
     # Seleccionar un usuario aleatorio
     if rut_usuario is not None:
         usuario = Usuario.getUsuarios(query_type="by_rut", rut=rut_usuario)
@@ -336,8 +336,8 @@ def generar_solicitud(rut_usuario=None):
     # Insertar la solicitud en la base de datos
     descripcion_solicitud = 'Descripción de la solicitud'
     cur.execute(
-        "INSERT INTO Solicitud (fecha, anio, semestre, estado, descripcion, usuario_rut, visita_id, cotizacion_id) VALUES (CURRENT_DATE, 2025, 1, 2, %s, %s, %s, %s) RETURNING id_solicitud;",
-        (descripcion_solicitud, usuario[0], visita_id, cotizacion_id)
+        "INSERT INTO Solicitud (fecha, anio, semestre, estado, descripcion, usuario_rut, visita_id, cotizacion_id) VALUES (CURRENT_DATE, 2025, 1, %s, %s, %s, %s, %s) RETURNING id_solicitud;",
+        (estado, descripcion_solicitud, usuario[0], visita_id, cotizacion_id)
     )
 
     solicitud_id = cur.fetchone()[0]
@@ -415,8 +415,9 @@ if __name__ == "__main__":
                         (usuario_rut, unidad[0]))
         conn.commit()
 
-    for _ in range(15):
-        generar_solicitud("99999999-9")
+    for i in range(2, 6):
+        for _ in range(15):
+            generar_solicitud("99999999-9", estado=i)
 
     # Confirmar los cambios
     conn.commit()
