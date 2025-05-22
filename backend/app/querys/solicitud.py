@@ -57,11 +57,11 @@ def Get():
         {
             "id_solicitud": row[0],
             "fecha": row[1],
-            "estado": row[2],
-            "str_estado": estados_dict_str[row[2]],
-            "descripcion": row[3],
-            "asignatura": row[4],
-            "visita": row[5]
+            "estado": row[4],
+            "str_estado": estados_dict_str[row[4]],
+            "descripcion": row[5],
+            "asignatura": row[6],
+            "visita": row[7]
         }
         for row in rows
     ]
@@ -424,11 +424,11 @@ def CambiarEstado(RUT, id_solicitud, decision, comentario=""):
     cur.execute(query, (estados[decision][estado_actual], id_solicitud))
 
     query = """
-        INSERT INTO HistorialEstadoSolicitud (id_solicitud, fecha, estado, usuario_rut, comentario)
-        VALUES (%s, NOW(), %s, %s, %s);
+        INSERT INTO HistorialEstadoSolicitud (solicitud_id, fecha_decision, estado_anterior, usuario_decision_rut, comentario, decision)
+        VALUES (%s, NOW(), %s, %s, %s, %s);
     """
 
-    cur.execute(query, (id_solicitud, estados[decision][estado_actual], RUT, comentario))
+    cur.execute(query, (id_solicitud, estados[decision][estado_actual], RUT, comentario, decision))
 
     conn.commit()
 

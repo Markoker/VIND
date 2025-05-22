@@ -38,6 +38,7 @@ export function DetalleSolicitud() {
             setMostrarComentario(false);
             setComentarioRechazo("");
         } catch (err) {
+            console.log(err);
             alert("No se pudo rechazar la solicitud.");
         }
     };

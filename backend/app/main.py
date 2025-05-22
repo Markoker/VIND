@@ -239,7 +239,7 @@ def aprobar_solicitud(id_solicitud: int, RUT: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 @solicitud_router.post("/{id_solicitud}/{RUT}/rechazar")
-def aprobar_solicitud(id_solicitud: int, RUT: str, comentario: str):
+def rechazar_solicitud(id_solicitud: int, RUT: str, comentario: str):
     try:
         Solicitud.CambiarEstado(RUT, id_solicitud, 0, comentario)
         return {"message": "Solicitud rechazada"}
