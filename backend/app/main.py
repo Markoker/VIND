@@ -223,7 +223,7 @@ def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = No
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@solicitud_router.get("/direccion/{rut}")
+@solicitud_router.get("/director/{rut}")
 def obtener_solicitudes_direccion(rut: str, emplazamiento_id: Optional[int] = None,
                                   unidad_academica_id: Optional[int] = None):
     print("→ FILTROS RECIBIDOS")

@@ -18,7 +18,7 @@ export function VerSolicitudesD({ rut }) {
         // Obtener unidades académicas disponibles
         const fetchEmplazamientos = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/ingeniero/emplazamiento`);
+                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/director/emplazamiento`);
                 setEmplazamientos(response.data);
             } catch (err) {
                 setError(
@@ -35,7 +35,7 @@ export function VerSolicitudesD({ rut }) {
     useEffect(() => {
         const fetchSolicitudes = async () => {
             try {
-                let url = `http://localhost:8000/solicitudes/ingeniero/${rut}`;
+                let url = `http://localhost:8000/solicitudes/director/${rut}`;
                 const params = new URLSearchParams();
 
                 if (emplazamientoId) params.append("emplazamiento_id", emplazamientoId);
@@ -147,12 +147,12 @@ export function VerSolicitudesD({ rut }) {
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
                         <td>{solicitud.visita}</td>
-                        <td><a href={`/ingeniero/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
+                        <td><a href={`/director/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
                     </tr>
                 ))}
                 </tbody>
             </table>
-            <button className="volver-btn" onClick={() => navigate("/ingeniero/dashboard")}>Volver</button>
+            <button className="volver-btn" onClick={() => navigate("/director/dashboard")}>Volver</button>
         </div>
     );
 }

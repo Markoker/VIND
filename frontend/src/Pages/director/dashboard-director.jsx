@@ -11,7 +11,7 @@ export function DashboardDirector() {
 
     return (
         <div style={{padding: "20px"}}>
-            <h1>Dashboard del Ingeniero</h1>
+            <h1>Dashboard del Director</h1>
             <div style={{marginBottom: "20px"}}>
                 <button onClick={handleLogout}>Logout</button>
             </div>
