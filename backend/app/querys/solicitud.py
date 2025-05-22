@@ -1,5 +1,14 @@
 from querys.utils import *
 
+estados_dict_str = {
+    0: "Rechazada",
+    1: "En revision requisitos",
+    2: "Pendiente requisitos",
+    3: "Revisión presupuesto",
+    4: "Pendiente firma",
+    5: "Orden de compra enviada",
+    6: "Aprobada",
+}
 
 def Save(data):
     conn = get_connection()
@@ -49,6 +58,7 @@ def Get():
             "id_solicitud": row[0],
             "fecha": row[1],
             "estado": row[2],
+            "str_estado": estados_dict_str[row[2]],
             "descripcion": row[3],
             "asignatura": row[4],
             "visita": row[5]
@@ -89,6 +99,7 @@ def GetAllIngeniero(emplazamientos_id=None):
         {
             "id_solicitud": row[0],
             "fecha": row[1],
+            "str_estado": estados_dict_str[row[2]],
             "estado": row[2],
             "descripcion": row[3],
             "asignatura": row[4],
@@ -128,6 +139,7 @@ def getPorEmplazamiento(emplazamiento_id):
         {
             "id_solicitud": row[0],
             "fecha": row[1],
+            "str_estado": estados_dict_str[row[2]],
             "estado": row[2],
             "descripcion": row[3],
             "asignatura": row[4],
@@ -184,6 +196,7 @@ def GetPorUnidad(usuario_rut, unidad_academica_id=None, departamento_id=None, qu
         {
             "id_solicitud": row[0],
             "fecha": row[1],
+            "str_estado": estados_dict_str[row[2]],
             "estado": row[2],
             "descripcion": row[3],
             "asignatura": row[4],
@@ -241,6 +254,7 @@ def GetPorUnidadYEmplazamiento(usuario_rut, unidad_academica_id, emplazamiento_i
         {
             "id_solicitud": row[0],
             "fecha": row[1],
+            "str_estado": estados_dict_str[row[2]],
             "estado": row[2],
             "descripcion": row[3],
             "asignatura": row[4],
@@ -260,7 +274,7 @@ def GetDetalle(id_solicitud):
                u.rut, u.first_name, u.last_name,
                v.nombre_empresa, v.fecha, v.lugar,
                ARRAY_AGG(DISTINCT a.sigla) AS asignaturas,
-               c.tipo, c.estado, c.monto, c.traslado_id, c.colacion_id
+               c.tipo, c.estado, c.monto, c.traslado_id, c.colacion_id, v.id_visita
         FROM Solicitud s
         INNER JOIN Usuario u ON s.usuario_rut = u.rut
         INNER JOIN Visita v ON s.visita_id = v.id_visita
@@ -269,7 +283,7 @@ def GetDetalle(id_solicitud):
         LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
         WHERE s.id_solicitud = %s
         GROUP BY s.id_solicitud, u.rut, u.first_name, u.last_name,
-                 v.nombre_empresa, v.fecha, v.lugar,
+                 v.id_visita, v.nombre_empresa, v.fecha, v.lugar,
                  c.tipo, c.estado, c.monto, c.traslado_id, c.colacion_id
     """
     cur.execute(query, (id_solicitud,))
@@ -283,6 +297,7 @@ def GetDetalle(id_solicitud):
     detalle = {
         "id": row[0],
         "fecha": row[1],
+        "str_estado": estados_dict_str[row[2]],
         "estado": row[2],
         "descripcion": row[3],
         "usuario": {
@@ -290,6 +305,7 @@ def GetDetalle(id_solicitud):
             "nombre": f"{row[5]} {row[6]}"
         },
         "visita": {
+            "id": row[16],
             "empresa": row[7],
             "fecha": row[8],
             "lugar": row[9]
@@ -313,13 +329,16 @@ def GetDetalle(id_solicitud):
             FROM Traslado WHERE id = %s
         """, (traslado_id,))
         t = cur.fetchone()
+
+        list_cotizaciones = [t[i] for i in range(4, 7) if t[i] is not None]
+
         if t:
             detalle["cotizacion"]["traslado"] = {
                 "nombre_proveedor": t[0],
                 "rut_proveedor": t[1],
                 "correo_proveedor": t[2],
                 "monto": t[3],
-                "cotizaciones": [t[4], t[5], t[6]]
+                "cotizaciones": list_cotizaciones
             }
 
     # Si hay colación asociada
@@ -332,13 +351,15 @@ def GetDetalle(id_solicitud):
         """, (colacion_id,))
         c = cur.fetchone()
         if c:
+            list_cotizaciones = [c[i] for i in range(5, 8) if c[i] is not None]
+
             colacion_info = {
                 "tipo_subvencion": c[0],
                 "nombre_proveedor": c[1],
                 "rut_proveedor": c[2],
                 "correo_proveedor": c[3],
                 "monto": c[4],
-                "cotizaciones": [c[5], c[6], c[7]]
+                "cotizaciones": list_cotizaciones
             }
 
             # Si es reembolso, obtener los datos del reembolso
@@ -382,6 +403,7 @@ def CambiarEstado(RUT, id_solicitud, decision, comentario=""):
             1:3,
             2:3,
             3:4,
+            4:5,
             5:6,
             6:6
         }
@@ -402,14 +424,48 @@ def CambiarEstado(RUT, id_solicitud, decision, comentario=""):
     cur.execute(query, (estados[decision][estado_actual], id_solicitud))
 
     query = """
-        INSERT INTO historialEstadoSolicitud 
-        ("solicitud_id", "estado_anterior", "decision", "usuario_decision_rut", "comentario", "fecha_decision")
-        VALUES (%s, %s, %s, %s, %s, CURRENT_DATE);
+        INSERT INTO HistorialEstadoSolicitud (id_solicitud, fecha, estado, usuario_rut, comentario)
+        VALUES (%s, NOW(), %s, %s, %s);
     """
-    cur.execute(query, (id_solicitud, estado_actual, decision, RUT, comentario))
+
+    cur.execute(query, (id_solicitud, estados[decision][estado_actual], RUT, comentario))
 
     conn.commit()
 
     cur.close()
     conn.close()
 
+def GetHistorial(id_solicitud):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+
+    query = '''
+    SELECT h.estado_anterior, h.decision, h.comentario, h.fecha_decision, h.usuario_decision_rut, u.first_name, u.last_name
+    FROM HistorialEstadoSolicitud AS h
+    JOIN Usuario AS u ON h.usuario_decision_rut = u.rut
+    WHERE h.solicitud_id = %s
+    ORDER BY h.fecha_decision ASC;
+    '''
+
+    cur.execute(query, (id_solicitud,))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "estado": r[0],
+            "estado_str": estados_dict_str[r[0]],
+            "decision": r[1],
+            "decision_str": "Aprobada" if r[1] else "Rechazada",
+            "comentario": r[2],
+            "fecha_decision": r[3],
+            "rut_decididor": r[4],
+            "nombre_decididor": f"{r[5]} {r[6]}"
+        }
+        for r in rows
+    ]

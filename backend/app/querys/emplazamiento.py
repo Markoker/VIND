@@ -39,3 +39,59 @@ def getUnidadesAcademicas(query_type="all",
     cur.close()
     conn.close()
     return rows
+
+def getPresupuestosEmplazamiento(id_emplazamiento, semestre, anio):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+
+    query = '''
+        SELECT ua.id_unidad_academica, ua.nombre, p.presupuesto
+        FROM UnidadAcademica ua
+        JOIN Presupuesto p ON ua.id_unidad_academica = p.id_unidad_academica
+        WHERE ua.emplazamiento_id = %s AND p.anio = %s AND p.semestre = %s
+    '''
+
+    cur.execute(query, (id_emplazamiento, anio, semestre,))
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "id_unidad_academica": row[0],
+            "nombre": row[1],
+            "presupuesto": row[2],
+        }
+        for row in rows
+    ]
+
+def getPresupuestoUnidadAcademica(id_unidad_academica, semestre, anio):
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+
+    query = '''
+        SELECT ua.nombre, p.presupuesto
+        FROM UnidadAcademica ua
+        JOIN Presupuesto p ON ua.id_unidad_academica = p.id_unidad_academica
+        WHERE ua.id_unidad_academica = %s AND p.anio = %s AND p.semestre = %s
+    '''
+
+    cur.execute(query, (id_unidad_academica, anio, semestre,))
+
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return {
+            "nombre": row[0],
+            "presupuesto": row[1],
+        }

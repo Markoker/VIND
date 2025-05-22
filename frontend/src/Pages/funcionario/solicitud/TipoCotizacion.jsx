@@ -83,10 +83,20 @@ export function TipoCotizacion() {
             cotizacion: cotizacionNormalizada,
             asistentes: asistentes
           };
+          console.log("Datos visita:", datosVisita)
       
           console.log("Enviando solicitud:", solicitud);
-      
-          await axios.post("http://localhost:8000/solicitudes", solicitud);
+          const response = await fetch('http://localhost:8000/usuario/login', {  // Envía los datos del formulario a la ruta de inicio de sesión
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(solicitud),
+          });
+
+          if (!response.ok) {
+            throw new Error('Credenciales incorrectas'); // Lanza un error si la respuesta no es ok
+          }
           alert("La solicitud fue enviada correctamente");
           navigate("/funcionario/dashboard");
         } catch (error) {

@@ -2,14 +2,14 @@ from querys.utils import *
 
 
 # Inicio de Sesión
-def login(correo, contraseña):
+def login(correo, contrasena):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
     cur = conn.cursor()
 
-    contraseña = sha256(contraseña.encode()).hexdigest()
-    cur.execute("SELECT * FROM Usuario WHERE email = %s AND password = %s;", (correo, contraseña))
+    contrasena = sha256(contrasena.encode()).hexdigest()
+    cur.execute("SELECT * FROM Usuario WHERE email = %s AND password = %s;", (correo, contrasena))
 
     rows = cur.fetchall()
     cur.close()

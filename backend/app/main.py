@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter, Body
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -98,7 +98,7 @@ async def guardar_visitantes_endpoint(visita_id: int, asistentes: list):
 
 # TEMPORAL: crear un encargado de visita
 @visita_router.post("/profesores")
-async def create_profesor(data: dict = Body(...)):
+async def create_profesor(data: dict):
     try:
         profesor_id = Visita.saveProfesor(data)
         return {"id_profesor": profesor_id}
@@ -425,6 +425,107 @@ async def get_profesores():
         raise HTTPException(status_code=404, detail="Profesores no encontrados.")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+@app.post("/cotizacion/{tipo}/{id}/archivo/{cotizacion_n}")
+async def guardar_archivo_cotizacion(
+    tipo: str,
+    id: int,
+    cotizacion_n: int,
+    archivo: UploadFile = File(...)
+):
+    """
+    Guarda un archivo PDF de cotización en la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    :param archivo: Archivo PDF a guardar.
+    :param cotizacion_n: Especifica a cual de las tres cotizaciones corresponde.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    # Verificar que el archivo sea un PDF
+    if archivo.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="El archivo debe ser un PDF.")
+
+    if cotizacion_n > 3 or cotizacion_n < 1:
+        raise HTTPException(status_code=400, detail="El número de cotización debe estar entre 1 y 3.")
+
+    # Guardar el archivo en el sistema de archivos
+    str_cotizacion_n = f"cotizacion_{cotizacion_n}"
+
+    ruta_archivo = f"uploads/{tipo}/{str_cotizacion_n}_{id}.pdf"
+    os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+    with open(ruta_archivo, "wb") as f:
+        f.write(archivo.file.read())
+
+    # Actualizar la base de datos
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    try:
+        if tipo == "traslado":
+            cur.execute("UPDATE Traslado SET %s = %s WHERE id = %s;", (str_cotizacion_n, ruta_archivo, id))
+        elif tipo == "colacion":
+            cur.execute("UPDATE Colacion SET %s = %s WHERE id = %s;", (str_cotizacion_n, ruta_archivo, id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Archivo guardado exitosamente.", "ruta_archivo": ruta_archivo}
+
+
+@app.get("/cotizacion/{tipo}/{id}/cotizacion/{cotizacion_n}", response_class=FileResponse)
+async def descargar_archivo_cotizacion(tipo: str, id: int, cotizacion_n: int):
+    """
+    Descarga un archivo PDF de cotización desde la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    :param cotizacion_n: Especifica cuál de las tres cotizaciones descargar.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    if cotizacion_n > 3 or cotizacion_n < 1:
+        raise HTTPException(status_code=400, detail="El número de cotización debe estar entre 1 y 3.")
+
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    str_cotizacion_n = f"cotizacion_{cotizacion_n}"
+
+    try:
+        if tipo == "traslado":
+            cur.execute(f"SELECT {str_cotizacion_n} FROM Traslado WHERE id = %s;", (id,))
+        elif tipo == "colacion":
+            cur.execute(f"SELECT {str_cotizacion_n} FROM Colacion WHERE id = %s;", (id,))
+
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+
+        ruta_archivo = result[0]
+        if not os.path.exists(ruta_archivo):
+            raise HTTPException(status_code=404, detail="El archivo no existe en el servidor.")
+
+        return FileResponse(
+            path=ruta_archivo,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(ruta_archivo)}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
 
 app.include_router(user_router)
 app.include_router(solicitud_router)

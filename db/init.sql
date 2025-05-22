@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS Colacion CASCADE;
 DROP TABLE IF EXISTS Reembolso CASCADE;
 DROP TABLE IF EXISTS Visitante CASCADE;
 DROP TABLE IF EXISTS Emplazamiento CASCADE;
+DROP TABLE IF EXISTS Presupuesto CASCADE;
 DROP TABLE IF EXISTS UnidadAcademica CASCADE;
 DROP TABLE IF EXISTS Asignatura CASCADE;
 DROP TABLE IF EXISTS AsignaturaSolicitud CASCADE;
@@ -44,6 +45,24 @@ CREATE TABLE UnidadAcademica (
     gasto INT NOT NULL,
     emplazamiento_id INT NOT NULL,
     FOREIGN KEY (emplazamiento_id) REFERENCES Emplazamiento(id_emplazamiento)
+);
+
+CREATE TABLE Presupuesto (
+    id_unidad_academica INT NOT NULL,
+    anio INT NOT NULL,
+    semestre INT NOT NULL CHECK (semestre IN (1,2)),
+    cantidad INT NOT NULL,
+    FOREIGN KEY (id_unidad_academica) REFERENCES UnidadAcademica(id_unidad_academica),
+    CONSTRAINT presupuesto_unico UNIQUE (id_unidad_academica, anio, semestre)
+);
+
+CREATE TABLE HistorialPresupuesto (
+    id_usuario INT NOT NULL,
+    id_unidad_academica INT NOT NULL,
+    anio INT NOT NULL,
+    semestre INT NOT NULL CHECK (semestre IN (1,2)),
+    nueva_cantidad INT NOT NULL,
+    fecha_cambio TIMESTAMP NOT NULL
 );
 
 -- 4. Funcionario
@@ -94,23 +113,24 @@ CREATE TABLE Asignatura (
     FOREIGN KEY (departamento_id) REFERENCES UnidadAcademica(id_unidad_academica)
 );
 
--- 9. Profesor
-CREATE TABLE Profesor (
-    id_profesor SERIAL PRIMARY KEY,
-    rut CHAR(12) NOT NULL,
-    nombre VARCHAR(64) NOT NULL,
-    email VARCHAR(254) NOT NULL
-);
-
 -- 10. Visita
 CREATE TABLE Visita (
     id_visita SERIAL PRIMARY KEY,
     nombre_empresa VARCHAR(64) DEFAULT 'NN',
     fecha DATE NOT NULL,
-    lugar VARCHAR(64) NOT NULL,
-    profesor_id INT NOT NULL,
-    FOREIGN KEY (profesor_id) REFERENCES Profesor(id_profesor)
+    lugar VARCHAR(64) NOT NULL
 );
+
+-- 9. Profesor
+CREATE TABLE Profesor (
+    id_profesor SERIAL PRIMARY KEY,
+    rut CHAR(12) NOT NULL,
+    nombre VARCHAR(64) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    visita_id INT NOT NULL,
+    FOREIGN KEY (visita_id) REFERENCES Visita(id_visita)
+);
+
 
 -- 13. Traslado
 CREATE TABLE Traslado (
@@ -173,7 +193,9 @@ CREATE TABLE Cotizacion (
 
 CREATE TABLE Solicitud (
     id_solicitud SERIAL PRIMARY KEY,
-    fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+    fecha TIMESTAMP NOT NULL DEFAULT CURRENT_DATE,
+    anio INT NOT NULL,
+    semestre INT NOT NULL CHECK (semestre IN (1,2)),
     estado INT DEFAULT 2 CHECK (estado BETWEEN 0 AND 6),
     descripcion TEXT NOT NULL,
     usuario_rut CHAR(10) NOT NULL,
@@ -201,12 +223,10 @@ CREATE TABLE HistorialEstadoSolicitud (
     estado_anterior INT NOT NULL CHECK (estado_anterior BETWEEN 0 AND 5),
     decision INT NOT NULL CHECK (decision IN (1, 0)),
     comentario TEXT,
-    fecha_decision DATE NOT NULL,
+    fecha_decision TIMESTAMP NOT NULL,
     FOREIGN KEY (usuario_decision_rut) REFERENCES Usuario(rut),
     FOREIGN KEY (solicitud_id) REFERENCES Solicitud(id_solicitud)
 );
-
-
 
 -- 17. Visitante
 CREATE TABLE Visitante (

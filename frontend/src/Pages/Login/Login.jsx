@@ -10,6 +10,11 @@ export function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Evita que se recargue la página
 
+    console.log(JSON.stringify({
+          "email": correo,
+          "password": contraseña
+        }))
+
     try {
       const response = await fetch('http://localhost:8000/usuario/login', {  // Envía los datos del formulario a la ruta de inicio de sesión
         method: 'POST',

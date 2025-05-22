@@ -53,10 +53,10 @@ def borrar_datos():
     cur.execute("DELETE FROM Ingeniero")
     cur.execute("DELETE FROM Director")
     cur.execute("DELETE FROM Subdirector")
-    cur.execute("DELETE FROM Solicitud")
     cur.execute("DELETE FROM HistorialEstadoSolicitud")
-    cur.execute("DELETE FROM Visita")
+    cur.execute("DELETE FROM Solicitud")
     cur.execute("DELETE FROM Profesor")
+    cur.execute("DELETE FROM Visita")
     cur.execute("DELETE FROM Cotizacion")
     cur.execute("DELETE FROM Traslado")
     cur.execute("DELETE FROM Colacion")
@@ -219,9 +219,9 @@ def generar_roles():
     conn.commit()
     print("Roles generados exitosamente.")
 
-def generar_profesores():
+def generar_profesores(n, visita_id):
     # Generate professors
-    for i in range(50):  # Adjust the number of professors as needed
+    for i in range(n):  # Adjust the number of professors as needed
         rut = str(random.randint(10000000, 25000000)) + "-" + str(random.randint(0, 9))
         nombre = (random.choice(nombres).lower()
                   .replace("á", "a")
@@ -240,15 +240,9 @@ def generar_profesores():
 
         email = f"{nombre}.{apellido}@usm.cl".lower()
 
-        # Check if email already exists
-        cur.execute("SELECT * FROM Profesor WHERE email = %s;", (email,))
-        while cur.fetchone() is not None:
-            email = f"{nombre}.{apellido}{random.randint(1, 100)}@usm.cl".lower()
-            cur.execute("SELECT * FROM Profesor WHERE email = %s;", (email,))
-
         cur.execute(
-            "INSERT INTO Profesor (rut, nombre, email) VALUES (%s, %s, %s);",
-            (rut, f"{nombre} {apellido}", email)
+            "INSERT INTO Profesor (rut, nombre, email, visita_id) VALUES (%s, %s, %s, %s);",
+            (rut, f"{nombre} {apellido}", email, visita_id)
         )
 
     conn.commit()
@@ -262,7 +256,6 @@ def generar_solicitud(rut_usuario=None):
         usuario = random.choice(Usuario.getUsuarios())
 
     # Crear una visita
-    profesor = random.choice(Visita.getProfesores())
     nombre_empresa = random.choice(['Empresa A', 'Empresa B', 'Empresa C'])
 
     # Random date
@@ -270,10 +263,12 @@ def generar_solicitud(rut_usuario=None):
 
     lugar_visita = f"Lugar {random.randint(1, 100)}"
     cur.execute(
-        "INSERT INTO Visita (nombre_empresa, fecha, lugar, profesor_id) VALUES (%s, %s, %s, %s) RETURNING id_visita;",
-        (nombre_empresa, fecha_visita, lugar_visita, profesor[0])
+        "INSERT INTO Visita (nombre_empresa, fecha, lugar) VALUES (%s, %s, %s) RETURNING id_visita;",
+        (nombre_empresa, fecha_visita, lugar_visita)
     )
     visita_id = cur.fetchone()[0]
+
+    generar_profesores(random.randint(1, 2), visita_id)
 
     # Crear una cotización
     tipo_cotizacion = random.choice(['Solo traslado', 'Solo colacion', 'Traslado y colacion'])
@@ -287,11 +282,20 @@ def generar_solicitud(rut_usuario=None):
         rut_proveedor = f"{random.randint(10000000, 25000000)}-{random.randint(0, 9)}"
         correo_proveedor = 'aaa@proveedor.com'
         monto_traslado = random.randint(1000, 10000)
-        cotizacion_1 = "asadjaisd"
+
+        cotizacion = "uploads/colacion/test.pdf"
+        n_cotizaciones = random.randint(1, 3)
+        cotizaciones = [cotizacion if c < n_cotizaciones else None for c in range(3)]
 
         cur.execute(
-            "INSERT INTO Traslado (nombre_proveedor, rut_proveedor, correo_proveedor, monto) VALUES (%s, %s, %s, %s) RETURNING id;",
-            (nombre_proveedor, rut_proveedor, correo_proveedor, monto_traslado)
+            '''INSERT INTO Traslado 
+               (nombre_proveedor, rut_proveedor, correo_proveedor, monto,
+               cotizacion_1, cotizacion_2, cotizacion_3) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s) 
+               RETURNING id;
+            ''',
+            (nombre_proveedor, rut_proveedor, correo_proveedor, monto_traslado,
+            cotizaciones[0], cotizaciones[1], cotizaciones[2])
         )
         id_traslado = cur.fetchone()[0]
 
@@ -302,11 +306,20 @@ def generar_solicitud(rut_usuario=None):
         rut_proveedor = '12345678-9'
         correo_proveedor = 'aaa@proveedor.com'
         monto_colacion = random.randint(1000, 10000)
-        cotizacion_1 = "asadjaisd"
+
+        cotizacion = "uploads/colacion/test.pdf"
+        n_cotizaciones = random.randint(1, 3)
+        cotizaciones = [cotizacion if c < n_cotizaciones else None for c in range(3)]
 
         cur.execute(
-            "INSERT INTO Colacion (nombre_proveedor, tipo_subvencion, rut_proveedor, correo_proveedor, monto) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
-            (nombre_proveedor, tipo_sub, rut_proveedor, correo_proveedor, monto_colacion)
+            '''INSERT INTO Colacion 
+               (nombre_proveedor, tipo_subvencion, rut_proveedor, 
+                correo_proveedor, monto, cotizacion_1, cotizacion_2, cotizacion_3) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
+               RETURNING id;
+            ''',
+            (nombre_proveedor, tipo_sub, rut_proveedor, correo_proveedor, monto_colacion,
+             cotizaciones[0], cotizaciones[1], cotizaciones[2])
         )
 
         id_colacion = cur.fetchone()[0]
@@ -323,7 +336,7 @@ def generar_solicitud(rut_usuario=None):
     # Insertar la solicitud en la base de datos
     descripcion_solicitud = 'Descripción de la solicitud'
     cur.execute(
-        "INSERT INTO Solicitud (fecha, estado, descripcion, usuario_rut, visita_id, cotizacion_id) VALUES (CURRENT_DATE, 2, %s, %s, %s, %s) RETURNING id_solicitud;",
+        "INSERT INTO Solicitud (fecha, anio, semestre, estado, descripcion, usuario_rut, visita_id, cotizacion_id) VALUES (CURRENT_DATE, 2025, 1, 2, %s, %s, %s, %s) RETURNING id_solicitud;",
         (descripcion_solicitud, usuario[0], visita_id, cotizacion_id)
     )
 
@@ -357,9 +370,6 @@ if __name__ == "__main__":
     cargar_datos_universidad('DATA.xlsx')
     generar_usuarios()
     generar_roles()
-
-    generar_profesores()
-
 
     usuario_rut = "12345678-9"
 

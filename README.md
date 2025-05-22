@@ -1,20 +1,13 @@
-Grupo 03, integrantes: 
+VIND, integrantes: 
 
-* Pía Correa - 202273042-0
-* Giuseppe Queirolo - 202273112-5
 * Sofía Ramírez  -  202273008-0
 * Marco Repetto - 202103059-K
 
-**Tutora** : Catalina Arrey
+# BBDD
 
+![Diagrama de la base de datos](DB_D.png)
 
-## Presentación prototipo 
-Se puede acceder al link de la presentación del prototipo desde este [enlace](https://www.youtube.com/watch?v=InVQOcuIjPk)
-## Wiki
-
-Se puede acceder al link de la wiki desde este [enlace](https://gitlab.com/mixedpaipo/grupo03-2024-proyinf/-/wikis/home)
-
-# Aspectos técnicos relevantes
+# Aspectos técnicos
 
 ## Requisitos
 
