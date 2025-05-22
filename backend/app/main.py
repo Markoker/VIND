@@ -223,6 +223,30 @@ def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = No
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+@solicitud_router.get("/direccion/{rut}")
+def obtener_solicitudes_direccion(rut: str, emplazamiento_id: Optional[int] = None,
+                                  unidad_academica_id: Optional[int] = None):
+    print("→ FILTROS RECIBIDOS")
+    print("RUT:", rut)
+    print("emplazamiento_id:", emplazamiento_id)
+    print("unidad_academica_id:", unidad_academica_id)
+    try:
+        if unidad_academica_id:
+            solicitudes = Solicitud.GetPorUnidadYEmplazamiento(
+                rut,
+                unidad_academica_id=unidad_academica_id,
+                emplazamiento_id=emplazamiento_id
+            )
+        elif emplazamiento_id:
+            solicitudes = Solicitud.GetAllIngeniero([emplazamiento_id])
+        else:
+            emplazamientos = Usuario.getRolEmplacements(rut, "director")
+            emplazamiento_ids = [e["id"] for e in emplazamientos]
+            solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
+        return solicitudes
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
 @solicitud_router.get("/{id_solicitud}")
 def get_solicitud_detalle(id_solicitud: int):
     try:

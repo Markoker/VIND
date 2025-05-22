@@ -13,6 +13,8 @@ import { Dashboard } from './Pages/Dashboard';
 import { DashboardFuncionario } from './Pages/funcionario/dashboard-funcionario';
 import { DatosAsignatura } from './Pages/funcionario/solicitud/DatosAsignatura';
 import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
+import { VerSolicitudesS } from './Pages/subdirector/verSolicitudes';
+import { DashboardSubdirector } from './Pages/subdirector/dashboard-subdirector';
 //import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 import { Presupuestos } from './Pages/Presupuesto';
@@ -128,6 +130,30 @@ function App() {
         path="/presupuestos"
         element={
           <PrivateRoute allowedRoles={["funcionario", "ingeniero"]}>
+            <Presupuestos />
+          </PrivateRoute>
+        }
+      />
+        <Route
+        path="/subdireccion/dashboard"
+        element={
+          <PrivateRoute allowedRoles={["subdirector"]}>
+            <DashboardSubdirector />
+          </PrivateRoute>
+        }
+      />
+        <Route
+        path="/subdireccion/solicitudes"
+        element={
+          <PrivateRoute allowedRoles={["subdirector"]}>
+            <VerSolicitudesS />
+          </PrivateRoute>
+        }
+      />
+        <Route
+        path="/subdireccion/presupuestos"
+        element={
+          <PrivateRoute allowedRoles={["subdirector"]}>
             <Presupuestos />
           </PrivateRoute>
         }

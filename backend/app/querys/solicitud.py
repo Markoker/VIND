@@ -149,7 +149,7 @@ def getPorEmplazamiento(emplazamiento_id):
         for row in rows
     ]
 
-def GetPorUnidad(usuario_rut, unidad_academica_id=None, departamento_id=None, query_from="funcionario"):
+def GetPorUnidad(usuario_rut, unidad_academica_id=None, query_from="funcionario"):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
