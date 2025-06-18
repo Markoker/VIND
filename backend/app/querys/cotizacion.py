@@ -1,5 +1,5 @@
-from utils import get_connection, registrar_historial_estado_item
-from solicitud import actualizar_estado_solicitud
+from .utils import get_connection, registrar_historial_estado_item
+from .solicitud import actualizar_estado_solicitud
 
 
 def Save(cotizacion, solicitud_id=None, usuario_rut=None):

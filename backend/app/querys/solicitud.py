@@ -1,5 +1,5 @@
-from utils import *
-from cotizacion import actualizar_estado_item
+from .utils import *
+#from .cotizacion import actualizar_estado_item
 
 estados_dict_str = {
     0: "Rechazada",
