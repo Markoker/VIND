@@ -48,12 +48,11 @@ roles = ['jefe', 'trabajador', 'contador']
 # Borrar datos de todas las tablas respetando el orden de dependencias
 # Para reinicios de la base de datos
 def borrar_datos():
+    cur.execute("DELETE FROM HistorialEstadoItem")
     cur.execute("DELETE FROM AsignaturaSolicitud")
     cur.execute("DELETE FROM Funcionario")
-    cur.execute("DELETE FROM Ingeniero")
+    cur.execute("DELETE FROM Administrador")
     cur.execute("DELETE FROM Director")
-    cur.execute("DELETE FROM Subdirector")
-    cur.execute("DELETE FROM HistorialEstadoSolicitud")
     cur.execute("DELETE FROM Solicitud")
     cur.execute("DELETE FROM Profesor")
     cur.execute("DELETE FROM Visita")
@@ -73,9 +72,8 @@ def reiniciar_secuencias():
     cur.execute("SELECT setval('emplazamiento_id_emplazamiento_seq', 1, false);")
     cur.execute("SELECT setval('unidadacademica_id_unidad_academica_seq', 1, false);")
     cur.execute("SELECT setval('funcionario_id_seq', 1, false);")
-    cur.execute("SELECT setval('ingeniero_id_seq', 1, false);")
+    cur.execute("SELECT setval('administrador_id_seq', 1, false);")
     cur.execute("SELECT setval('director_id_seq', 1, false);")
-    cur.execute("SELECT setval('subdirector_id_seq', 1, false);")
     cur.execute("SELECT setval('asignatura_id_asignatura_seq', 1, false);")
     cur.execute("SELECT setval('profesor_id_profesor_seq', 1, false);")
     cur.execute("SELECT setval('visita_id_visita_seq', 1, false);")
@@ -84,7 +82,7 @@ def reiniciar_secuencias():
     cur.execute("SELECT setval('colacion_id_seq', 1, false);")
     cur.execute("SELECT setval('cotizacion_id_cotizacion_seq', 1, false);")
     cur.execute("SELECT setval('solicitud_id_solicitud_seq', 1, false);")
-    cur.execute("SELECT setval('historialestadosolicitud_id_seq', 1, false);")
+    cur.execute("SELECT setval('historialestadoitem_id_seq', 1, false);")
     cur.execute("SELECT setval('visitante_id_seq', 1, false);")
     conn.commit()
 
@@ -100,11 +98,8 @@ def cargar_datos_universidad(archivo):
     campus = df['CAMPUS_SEDE'].unique().tolist()
     departamento = df[['DEPARTAMENTO', 'CAMPUS_SEDE']].drop_duplicates().to_dict('records')
     semestre = df['SEMESTRE'].unique().tolist()
-    asignaturas = df[['SIGLA', 'ASIGNATURA', 'DEPARTAMENTO', 'SEMESTRE', 'CAMPUS_SEDE']].drop_duplicates().to_dict(
-        'records')
-    paralelos = df[
-        ['SIGLA', 'ASIGNATURA', 'PARALELO', 'SEMESTRE', 'DEPARTAMENTO', 'CAMPUS_SEDE']].drop_duplicates().to_dict(
-        'records')
+    asignaturas = df[['SIGLA', 'ASIGNATURA', 'DEPARTAMENTO', 'SEMESTRE', 'CAMPUS_SEDE']].drop_duplicates().to_dict('records')
+    paralelos = df[['SIGLA', 'ASIGNATURA', 'PARALELO', 'SEMESTRE', 'DEPARTAMENTO', 'CAMPUS_SEDE']].drop_duplicates().to_dict('records')
 
     # Insertar datos en la tabla Emplazamiento
     for c in campus:
@@ -119,7 +114,7 @@ def cargar_datos_universidad(archivo):
             "INSERT INTO UnidadAcademica (nombre, presupuesto, gasto, emplazamiento_id) VALUES (%s, %s, %s, (SELECT id_emplazamiento FROM Emplazamiento WHERE nombre = %s)) ON CONFLICT DO NOTHING;",
             (d['DEPARTAMENTO'], presupuesto, gasto, d['CAMPUS_SEDE']))
 
-    # Insertar datos en la tabla Paralelo
+    # Insertar datos en la tabla Asignatura
     for p in paralelos:
         cur.execute(
             "INSERT INTO Asignatura (sigla, nombre, semestre, departamento_id, paralelo, anio) VALUES (%s, %s, %s, (SELECT id_unidad_academica FROM UnidadAcademica WHERE nombre = %s AND emplazamiento_id = (SELECT id_emplazamiento FROM Emplazamiento WHERE nombre = %s)), %s, 2024) ON CONFLICT DO NOTHING;",
@@ -129,8 +124,7 @@ def cargar_datos_universidad(archivo):
     print("Datos cargados exitosamente.")
 
 def generar_usuarios():
-    Usuario.createUser(rut="99999999-9", email="test@test.cl", first_name="nombre", last_name="apellido",
-                       password="1234")
+    Usuario.createUser(rut="99999999-9", email="test@test.cl", first_name="nombre", last_name="apellido", password="1234")
     # Generar usuarios
     for i in range(100):
         rut = str(random.randint(10000000, 25000000)) + "-" + str(random.randint(0, 9))
@@ -168,9 +162,8 @@ def generar_roles():
 
     for usuario in usuarios:
         isFuncionario = random.randint(0, 1)
-        isIngeniero = random.randint(0, 1)
+        isAdministrador = random.randint(0, 1)
         isDirector = random.randint(0, 1)
-        isSubdirector = random.randint(0, 1)
 
         if isFuncionario:
             cantidad = random.randint(1, 5)
@@ -178,23 +171,17 @@ def generar_roles():
                 unidad = random.choice(unidades)
                 cur.execute("INSERT INTO Funcionario (usuario_rut, unidad_academica_id) VALUES (%s, %s);", (usuario[0], unidad[0]))
 
-        if isIngeniero:
+        if isAdministrador:
             cantidad = random.randint(1, 5)
             for i in range(cantidad):
                 emplazamiento = random.choice(emplazamientos)
-                cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento['id']))
+                cur.execute("INSERT INTO Administrador (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento['id']))
 
         if isDirector:
             cantidad = random.randint(1, 5)
             for i in range(cantidad):
                 emplazamiento = random.choice(emplazamientos)
                 cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);", (usuario[0], emplazamiento['id']))
-
-        if isSubdirector:
-            cantidad = random.randint(1, 5)
-            for i in range(cantidad):
-                unidad = random.choice(unidades)
-                cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);", (usuario[0], unidad[0]))
 
     usuario_rut = "99999999-9"
     unidad = random.sample(unidades, k=7)
@@ -205,16 +192,12 @@ def generar_roles():
                     (usuario_rut, unidad[i][0]))
 
     for i in range(2):
-        cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+        cur.execute("INSERT INTO Administrador (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
                     (usuario_rut, emplazamiento[i]['id']))
 
     for i in range(2):
         cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
                     (usuario_rut, emplazamiento[i]['id']))
-
-    for i in range(7):
-        cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
-                    (usuario_rut, unidad[i][0]))
 
     conn.commit()
     print("Roles generados exitosamente.")
@@ -257,11 +240,9 @@ def generar_solicitud(rut_usuario=None, estado=2):
 
     # Crear una visita
     nombre_empresa = random.choice(['Empresa A', 'Empresa B', 'Empresa C'])
-
-    # Random date
-    fecha_visita = f"{random.randint(2024, 2025)}-{random.randint(1, 12)}-{random.randint(1, 28)}-"
-
+    fecha_visita = f"{random.randint(2024, 2025)}-{random.randint(1, 12)}-{random.randint(1, 28)}"
     lugar_visita = f"Lugar {random.randint(1, 100)}"
+    
     cur.execute(
         "INSERT INTO Visita (nombre_empresa, fecha, lugar) VALUES (%s, %s, %s) RETURNING id_visita;",
         (nombre_empresa, fecha_visita, lugar_visita)
@@ -290,12 +271,12 @@ def generar_solicitud(rut_usuario=None, estado=2):
         cur.execute(
             '''INSERT INTO Traslado 
                (nombre_proveedor, rut_proveedor, correo_proveedor, monto,
-               cotizacion_1, cotizacion_2, cotizacion_3) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s) 
+               cotizacion_1, cotizacion_2, cotizacion_3, estado) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
                RETURNING id;
             ''',
             (nombre_proveedor, rut_proveedor, correo_proveedor, monto_traslado,
-            cotizaciones[0], cotizaciones[1], cotizaciones[2])
+            cotizaciones[0], cotizaciones[1], cotizaciones[2], 'pendiente_revision')
         )
         id_traslado = cur.fetchone()[0]
 
@@ -314,12 +295,12 @@ def generar_solicitud(rut_usuario=None, estado=2):
         cur.execute(
             '''INSERT INTO Colacion 
                (nombre_proveedor, tipo_subvencion, rut_proveedor, 
-                correo_proveedor, monto, cotizacion_1, cotizacion_2, cotizacion_3) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
+                correo_proveedor, monto, cotizacion_1, cotizacion_2, cotizacion_3, estado) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
                RETURNING id;
             ''',
             (nombre_proveedor, tipo_sub, rut_proveedor, correo_proveedor, monto_colacion,
-             cotizaciones[0], cotizaciones[1], cotizaciones[2])
+             cotizaciones[0], cotizaciones[1], cotizaciones[2], 'pendiente_revision')
         )
 
         id_colacion = cur.fetchone()[0]
@@ -342,20 +323,34 @@ def generar_solicitud(rut_usuario=None, estado=2):
 
     solicitud_id = cur.fetchone()[0]
 
+    # Registrar historial de estados para los ítems
+    if id_traslado:
+        cur.execute(
+            '''INSERT INTO HistorialEstadoItem 
+               (solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_decision_rut) 
+               VALUES (%s, %s, %s, %s, %s, %s);''',
+            (solicitud_id, 'traslado', id_traslado, 'inicial', 'pendiente_revision', usuario[0])
+        )
+
+    if id_colacion:
+        cur.execute(
+            '''INSERT INTO HistorialEstadoItem 
+               (solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_decision_rut) 
+               VALUES (%s, %s, %s, %s, %s, %s);''',
+            (solicitud_id, 'colacion', id_colacion, 'inicial', 'pendiente_revision', usuario[0])
+        )
+
     conn.commit()
 
     # Crear registros correspondientes en la tabla AsignaturaSolicitud en base a las unidades academicas del usuario
-    print(f"{usuario[0] = }")
     unidades_academicas = Usuario.getRolDeptos(usuario[0], "funcionario")
-    print(f"{unidades_academicas = }")
-
     cant_asignaturas = random.randint(1, 3)
 
     for i in range(cant_asignaturas):
         asignatura = random.choice(Asignatura.Get(query_type="by_unidad", id_unidad_academica=random.choice(unidades_academicas)['id'], semestre=2))
         cur.execute(
             "INSERT INTO AsignaturaSolicitud (asignatura_id, solicitud_id) VALUES (%s, %s);",
-            (asignatura[0], solicitud_id )
+            (asignatura[0], solicitud_id)
         )
 
     conn.commit()
@@ -363,7 +358,6 @@ def generar_solicitud(rut_usuario=None, estado=2):
 
 # Ejecutar los generadores de datos
 if __name__ == "__main__":
-
     borrar_datos()
     reiniciar_secuencias()
 
@@ -378,43 +372,22 @@ if __name__ == "__main__":
     unidades = Emplazamiento.getUnidadesAcademicas()
     emplazamientos = Emplazamiento.getEmplazamientos()
 
-    isFuncionario = 1
-    isIngeniero = 1
-    isDirector = 1
-    isSubdirector = 1
+    # Asignar roles al usuario de prueba
+    for i in range(7):
+        cur.execute("INSERT INTO Funcionario (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
+                    (usuario_rut, unidades[i][0]))
 
-    if isFuncionario:
-        cantidad = random.randint(5, 10)
-        for i in range(cantidad):
-            unidad = random.choice(unidades)
-            cur.execute("INSERT INTO Funcionario (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
-                        (usuario_rut, unidad[0]))
-        conn.commit()
+    for i in range(2):
+        cur.execute("INSERT INTO Administrador (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+                    (usuario_rut, emplazamientos[i]['id']))
 
-    if isIngeniero:
-        cantidad = random.randint(5, 10)
-        for i in range(cantidad):
-            emplazamiento = random.choice(emplazamientos)
-            cur.execute("INSERT INTO Ingeniero (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
-                        (usuario_rut, emplazamiento['id']))
-        conn.commit()
+    for i in range(2):
+        cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
+                    (usuario_rut, emplazamientos[i]['id']))
 
-    if isDirector:
-        cantidad = random.randint(5, 10)
-        for i in range(cantidad):
-            emplazamiento = random.choice(emplazamientos)
-            cur.execute("INSERT INTO Director (usuario_rut, emplazamiento_id) VALUES (%s, %s);",
-                        (usuario_rut, emplazamiento['id']))
-        conn.commit()
+    conn.commit()
 
-    if isSubdirector:
-        cantidad = random.randint(5, 10)
-        for i in range(cantidad):
-            unidad = random.choice(unidades)
-            cur.execute("INSERT INTO Subdirector (usuario_rut, unidad_academica_id) VALUES (%s, %s);",
-                        (usuario_rut, unidad[0]))
-        conn.commit()
-
+    # Generar solicitudes de prueba
     for i in range(2, 6):
         for _ in range(15):
             generar_solicitud("99999999-9", estado=i)

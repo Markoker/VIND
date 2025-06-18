@@ -2,7 +2,7 @@ import {useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import axios from "axios";
 
-export function DetalleSolicitudI() {
+export function DetalleSolicitudS() {
     const {id} = useParams();
     const [detalle, setDetalle] = useState(null);
     const [error, setError] = useState("");
@@ -14,7 +14,7 @@ export function DetalleSolicitudI() {
     const aprobarSolicitud = async () => {
         try {
             await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/aprobar`);
-            setDetalle({...detalle, estado: 3});
+            setDetalle({...detalle, estado: 4});
         } catch (err) {
             alert("No se pudo aprobar la solicitud.");
         }
@@ -34,7 +34,7 @@ export function DetalleSolicitudI() {
             await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/rechazar`, null, {
                 params: {comentario: comentarioRechazo}
             });
-            setDetalle({...detalle, estado: 0});
+            setDetalle({...detalle, estado: 1});
             setMostrarComentario(false);
             setComentarioRechazo("");
         } catch (err) {
@@ -177,7 +177,7 @@ export function DetalleSolicitudI() {
 
             <hr/>
 
-            {(detalle.estado === 2 || detalle.estado === 1) && (
+            {(detalle.estado === 3) && (
                 <>
                     <div style={{display: "flex", gap: "10px"}}>
                         <button onClick={aprobarSolicitud}>Aceptar</button>
@@ -202,7 +202,7 @@ export function DetalleSolicitudI() {
             )}
 
             <br/>
-            <button onClick={() => navigate("/ingeniero/solicitudes")}>Volver</button>
+            <button onClick={() => navigate("/subdireccion/solicitudes")}>Volver</button>
         </div>
     );
 }

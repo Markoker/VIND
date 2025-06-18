@@ -1,4 +1,4 @@
-from querys.utils import *
+from utils import *
 
 
 # Inicio de Sesión
@@ -155,6 +155,14 @@ def getRolEmplacements(rut,
             FROM Director d
             JOIN Emplazamiento e ON d.emplazamiento_id = e.id_emplazamiento
             WHERE d.usuario_rut = %s;
+        """, (rut,))
+    elif rol == "subdirector":
+        cur.execute("""
+            SELECT DISTINCT e.id_emplazamiento, e.nombre, e.sigla
+            FROM Subdirector s
+            JOIN UnidadAcademica u ON s.unidad_academica_id = u.id_unidad_academica
+            JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+            WHERE s.usuario_rut = %s;
         """, (rut,))
     else:
         raise ValueError("Rol no válido")

@@ -1,11 +1,13 @@
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Query, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from datetime import date, datetime
 from typing import Optional, List
+import sys
 import os
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from querys.utils import *
 import querys.cotizacion as Cotizacion
 import querys.emplazamiento as Emplazamiento
@@ -14,6 +16,8 @@ import querys.visita as Visita
 import querys.usuario as Usuario
 import querys.asignatura as Asignatura
 import querys.presupuesto as Presupuesto
+from querys.cotizacion import actualizar_estado_item
+from querys.utils import obtener_historial_item
 
 app = FastAPI()
 
@@ -193,7 +197,7 @@ def obtener_solicitudes():
 @solicitud_router.get("/funcionario/{rut}")
 def obtener_solicitudes_funcionario(rut: str, unidad_academica_id: Optional[int] = None):
     try:
-        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id, query_from="funcionario")
+        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id, query_from="subdirector")
         if solicitudes:
             return solicitudes
         raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
@@ -214,11 +218,34 @@ def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = No
                 emplazamiento_id=emplazamiento_id
             )
         elif emplazamiento_id:
-            solicitudes = Solicitud.GetAllIngeniero([emplazamiento_id])
+            solicitudes = Solicitud.GetAllEmplazamiento([emplazamiento_id])
         else:
             emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
             emplazamiento_ids = [e["id"] for e in emplazamientos]
-            solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
+            solicitudes = Solicitud.GetAllEmplazamiento(emplazamiento_ids)
+        return solicitudes
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+@solicitud_router.get("/subdirector/{rut}")
+def obtener_solicitudes_subdirector(rut: str, emplazamiento_id: Optional[int] = None, unidad_academica_id: Optional[int] = None):
+    print("→ FILTROS RECIBIDOS")
+    print("RUT:", rut)
+    print("emplazamiento_id:", emplazamiento_id)
+    print("unidad_academica_id:", unidad_academica_id)
+    try:
+        if unidad_academica_id:
+            solicitudes = Solicitud.GetPorUnidadYEmplazamiento(
+                rut,
+                unidad_academica_id=unidad_academica_id,
+                emplazamiento_id=emplazamiento_id
+            )
+        elif emplazamiento_id:
+            solicitudes = Solicitud.GetAllEmplazamiento([emplazamiento_id])
+        else:
+            emplazamientos = Usuario.getRolEmplacements(rut, "subdirector")
+            emplazamiento_ids = [e["id"] for e in emplazamientos]
+            solicitudes = Solicitud.GetAllEmplazamiento(emplazamiento_ids)
         return solicitudes
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -238,11 +265,11 @@ def obtener_solicitudes_direccion(rut: str, emplazamiento_id: Optional[int] = No
                 emplazamiento_id=emplazamiento_id
             )
         elif emplazamiento_id:
-            solicitudes = Solicitud.GetAllIngeniero([emplazamiento_id])
+            solicitudes = Solicitud.GetAllEmplazamiento([emplazamiento_id])
         else:
             emplazamientos = Usuario.getRolEmplacements(rut, "director")
             emplazamiento_ids = [e["id"] for e in emplazamientos]
-            solicitudes = Solicitud.GetAllIngeniero(emplazamiento_ids)
+            solicitudes = Solicitud.GetAllEmplazamiento(emplazamiento_ids)
         return solicitudes
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -550,6 +577,31 @@ async def descargar_archivo_cotizacion(tipo: str, id: int, cotizacion_n: int):
         cur.close()
         conn.close()
 
+@solicitud_router.put("/{id_solicitud}/{item_tipo}/{item_id}/estado")
+def cambiar_estado_item(id_solicitud: int, item_tipo: str, item_id: int, estado_nuevo: str = Body(...), usuario_rut: str = Body(...), comentario: str = Body(None)):
+    """
+    Cambia el estado de un ítem (colacion o traslado) y registra el historial.
+    """
+    if item_tipo not in ["colacion", "traslado"]:
+        raise HTTPException(status_code=400, detail="Tipo de ítem no válido.")
+    try:
+        actualizar_estado_item(item_tipo, item_id, id_solicitud, estado_nuevo, usuario_rut, comentario)
+        return {"message": f"Estado de {item_tipo} actualizado a {estado_nuevo}"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.get("/{id_solicitud}/{item_tipo}/{item_id}/historial")
+def historial_estado_item(id_solicitud: int, item_tipo: str, item_id: int):
+    """
+    Devuelve el historial de cambios de estado de un ítem (colacion o traslado).
+    """
+    if item_tipo not in ["colacion", "traslado"]:
+        raise HTTPException(status_code=400, detail="Tipo de ítem no válido.")
+    try:
+        historial = obtener_historial_item(item_tipo, item_id)
+        return {"historial": historial}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 app.include_router(user_router)
 app.include_router(solicitud_router)
@@ -557,224 +609,3 @@ app.include_router(emplazamiento_router)
 app.include_router(asignatura_router)
 app.include_router(visita_router)
 app.include_router(presupuesto_router)
-'''
-@app.get("/rendiciones/resumen", response_model=DineroResumen)
-def calcular_dinero_resumen():
-    print("Endpoint /rendiciones/resumen fue llamado")
-    devoluciones = getDevoluciones()
-    dinero_devuelto = sum([dev[3] for dev in devoluciones if dev[4] == "Devuelta"])
-    dinero_por_devolver = sum([dev[3] for dev in devoluciones if dev[4] == "Por Devolver"])
-
-    # Crear una instancia de DineroResumen
-    return DineroResumen(
-        dinero_devuelto=dinero_devuelto,
-        dinero_por_devolver=dinero_por_devolver
-    )
-
-# Crear rendición
-@app.post("/rendiciones")
-async def create_rendicion(
-    t_subida: str = Form(...),
-    monto: int = Form(...),
-    estado: str = Form(...),
-    descripcion: str = Form(...),
-    a_asignada: int = Form(...),  # Asegúrate de que sea int en el frontend
-    comentario: Optional[str] = Form(None)
-):
-    fecha = datetime.now()  # Fecha actual en el backend
-    print(f"T_subida recibido: {t_subida}")  # Agregar este log
-    try:
-        # Crear la rendición
-        new_id = createRendicion(fecha, t_subida, monto, estado, a_asignada, descripcion)
-        return {"message": f"Rendición creada con ID {new_id}"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-# Endpoint para subir archivos
-@app.post("/rendiciones/{rendicion_id}/archivos")
-async def upload_files(rendicion_id: int, archivos: List[UploadFile] = File(...)):
-    documento_ids = []  # Lista para almacenar los IDs de documentos
-    try:
-        for archivo in archivos:
-            file_location = os.path.join(os.path.dirname(__file__), "uploads", archivo.filename)
-            with open(file_location, "wb") as file_object:
-                file_object.write(archivo.file.read())
-            
-            # Guardar el documento en la base de datos y obtener el ID
-            doc_id = saveDocument(nombre=archivo.filename, ruta=file_location, rendicion_id=rendicion_id)
-            if doc_id:
-                documento_ids.append(doc_id)  # Agregar el ID a la lista
-            else:
-                print("Error al guardar el documento en la base de datos")
-        
-        return {"message": "Archivos subidos con éxito", "documento_ids": documento_ids}
-    except Exception as e:
-        print(f"Error al subir archivo: {e}")
-        raise HTTPException(status_code=500, detail="Error al subir archivos")
-
-
-
-# Actualizar rendición
-@app.put("/rendiciones/{rendicion_id}")
-def update_rendicion(rendicion_id: int, rendicion: RendicionUpdate):
-    updated_rows = updateRendicion(rendicion.idRendicion, rendicion.fecha, rendicion.T_subida, rendicion.monto, rendicion.Estado, rendicion.A_asignada, rendicion.Descripción)
-    if updated_rows == 0:
-        raise HTTPException(status_code=404, detail=f"Rendicion con ID {rendicion_id} no encontrada")
-    return {"message": f"Rendicion con ID {rendicion_id} actualizada"}
-
-# Borrar rendición
-@app.delete("/rendiciones/{rendicion_id}")
-def delete_rendicion(rendicion_id: int):
-    deleted_rows = deleteRendicion(rendicion_id)
-    if deleted_rows == 0:
-        raise HTTPException(status_code=404, detail=f"Rendicion con ID {rendicion_id} no encontrada")
-    return {"message": f"Rendicion con ID {rendicion_id} eliminada"}
-
-@app.get("/devoluciones/{devolucion_id}")
-def get_devolucion(devolucion_id: int, rol: str = Query(...)):
-    print(f"Solicitud recibida para devolución ID: {devolucion_id}, rol: {rol}")
-    if rol not in ["contador", "jefe"]:
-        raise HTTPException(status_code=401, detail="No tienes permisos para ver devoluciones")
-
-    devolucion = getRendiciones(query_type="by_id", rendicion_id=devolucion_id, rol=rol)
-    if not devolucion:
-        raise HTTPException(status_code=404, detail="Devolución no encontrada")
-
-    return {
-        "idRendicion": devolucion[0][0],
-        "fecha": devolucion[0][1],
-        "monto": devolucion[0][2],
-        "estado": devolucion[0][3],
-        "descripcion": devolucion[0][4],
-        "trabajador_nombre": devolucion[0][7],
-        "a_asignada": devolucion[0][6],
-        "contador_resolutivo": devolucion[0][9] if rol == "jefe" else None
-    }
-
-
-
-@app.get("/devoluciones")
-def read_devoluciones(rol: str):
-    if rol != "contador":
-        raise HTTPException(status_code=401, detail="No tienes permisos para ver devoluciones")
-    
-    devoluciones = getDevoluciones()
-    
-    return {"devoluciones": [
-        {
-            "idRendicion": devolucion[0],   # ID de la rendición
-            "fecha": devolucion[1],         # Fecha de la rendición
-            "t_subida": devolucion[6],      # Nombre del trabajador
-            "monto": devolucion[3],         # Monto de la rendición
-            "estado": devolucion[4],        # Estado de la rendición
-            "a_asignada": devolucion[5],    # Nombre de la actividad
-            "descripcion": devolucion[7],    # Descripción de la rendición
-            "rut": devolucion[8]             # RUT del trabajador, no se muestra en la tabla
-        }
-        for devolucion in devoluciones
-    ]}
-
-@app.put("/rendiciones/{rendicion_id}/estado")
-def update_rendicion_estado(
-    rendicion_id: int,
-    request: RendicionEstadoUpdate,
-    contador_rut: str = Query(...)
-):
-    print(f"PUT Request for rendicion_id: {rendicion_id}")
-    print(f"Data received: {request.dict()}")
-    print(f"contador_rut: {contador_rut}")
-    if request.nuevo_estado not in ["Pendiente", "Por Devolver", "Devuelta", "Rechazada"]:
-        raise HTTPException(status_code=400, detail="Estado no válido")
-    
-    updated_rows = updateRendicionEstado(rendicion_id, request.nuevo_estado, request.comentario, contador_rut)
-
-    if updated_rows == 0:
-        raise HTTPException(status_code=404, detail=f"Rendicion con ID {rendicion_id} no encontrada")
-    return {"message": f"Rendicion con ID {rendicion_id} actualizada a estado {request.nuevo_estado}"}
-
-# Ver una rendicion
-@app.get("/rendiciones")
-def read_rendiciones(rol: str = Query(...), trabajador_rut: str = None):
-    if rol == "trabajador":
-        if trabajador_rut is None:
-            raise HTTPException(status_code=400, detail="Falta el RUT del trabajador")
-        # Obtener rendiciones solo para este trabajador
-        rendiciones = getRendicionesParaTrabajador(trabajador_rut)
-    elif rol in ["contador", "jefe"]:
-        # Obtener todas las rendiciones o según el estado
-        rendiciones = getRendiciones()
-    else:
-        raise HTTPException(status_code=401, detail="No tienes permisos para ver rendiciones")
-
-    return {"rendiciones": rendiciones}
-
-@app.get("/rendiciones/resumen", response_model=DineroResumen)
-def calcular_dinero_resumen():
-    print("Endpoint /rendiciones/resumen fue llamado")
-    devoluciones = getDevoluciones()
-    dinero_devuelto = sum([dev[3] for dev in devoluciones if dev[4] == "Devuelta"])
-    dinero_por_devolver = sum([dev[3] for dev in devoluciones if dev[4] == "Por Devolver"])
-
-    # Crear una instancia de DineroResumen
-    return DineroResumen(
-        dinero_devuelto=dinero_devuelto,
-        dinero_por_devolver=dinero_por_devolver
-    )
-
-@app.get("/rendiciones/{rendicion_id}")
-def get_rendicion(rendicion_id: int, rol: str = None):
-    try:
-        if rol not in ["contador", "jefe"]:
-            raise HTTPException(status_code=401, detail="No tienes permisos para ver rendiciones")
-
-        rows = getRendiciones(query_type="by_id", rendicion_id=rendicion_id, rol=rol)
-        if len(rows) == 0:
-            raise HTTPException(status_code=404, detail=f"Rendicion con ID {rendicion_id} no encontrada")
-
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT idDocs FROM Docs WHERE rendicion = %s;", (rendicion_id,))
-        documentos = [doc[0] for doc in cur.fetchall()]
-        cur.close()
-        conn.close()
-
-        response = {
-            "idrendicion": rows[0][0],
-            "fecha": rows[0][1],
-            "monto": rows[0][2],
-            "estado": rows[0][3],
-            "descripcion": rows[0][4],
-            "comentario": rows[0][5],
-            "actividad_nombre": rows[0][6],
-            "trabajador_nombre": rows[0][7],
-            "trabajador_rut": rows[0][8],
-            "contador_resolutivo": rows[0][9],
-            "contador_devolutivo": rows[0][10],
-            "documentos": documentos  # Incluye los documentos en la respuesta
-        }
-
-        print("Respuesta para /rendiciones/{rendicion_id}:", response)
-        return response
-    except Exception as e:
-        print("Error en get_rendicion:", str(e))
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
-
-
-
-
-
-@app.get("/documentos/{documento_id}", response_class=FileResponse)
-def descargar_documento(documento_id: int):
-    # Llama a la función en utils.py para obtener la ruta del archivo
-    file_path = direccionDocumento(documento_id)
-    
-    if not file_path:
-        raise HTTPException(status_code=404, detail="Documento no encontrado en la base de datos")
-    
-    # Verifica que el archivo existe en el sistema de archivos
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="El archivo no existe en el servidor")
-
-    # Devuelve el archivo como respuesta
-    return FileResponse(path=file_path, media_type='application/pdf', filename=os.path.basename(file_path))
-'''

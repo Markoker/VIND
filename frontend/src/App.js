@@ -18,7 +18,8 @@ import { DashboardSubdirector } from './Pages/subdirector/dashboard-subdirector'
 //import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 import { Presupuestos } from './Pages/Presupuesto';
-import { DetalleSolicitud } from './Pages/ingeniero/detalleSolicitud';
+import { DetalleSolicitudI } from './Pages/ingeniero/detalleSolicitud';
+import { DetalleSolicitudS } from './Pages/subdirector/detalleSolicitud';
 import { DashboardDirector } from './Pages/director/dashboard-director';
 import { VerSolicitudesD } from './Pages/director/verSolicitudesD';
 import { DetalleCotizacion } from './Pages/director/cotizacion';
@@ -122,7 +123,7 @@ function App() {
         path="/ingeniero/solicitudes/:id"
         element={
           <PrivateRoute allowedRoles={["ingeniero"]}>
-            <DetalleSolicitud />
+            <DetalleSolicitudI />
           </PrivateRoute>
         }
       />
@@ -148,6 +149,14 @@ function App() {
         element={
           <PrivateRoute allowedRoles={["subdirector"]}>
             <VerSolicitudesS />
+          </PrivateRoute>
+        }
+      />
+        <Route
+        path="/subdireccion/solicitudes/:id"
+        element={
+          <PrivateRoute allowedRoles={["subdirector"]}>
+            <DetalleSolicitudS />
           </PrivateRoute>
         }
       />

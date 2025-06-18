@@ -1,4 +1,5 @@
-from querys.utils import *
+from utils import *
+from cotizacion import actualizar_estado_item
 
 estados_dict_str = {
     0: "Rechazada",
@@ -18,13 +19,12 @@ def Save(data):
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO Solicitud (fecha, estado, descripcion, usuario_rut, visita_id, cotizacion_id)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO Solicitud (fecha, descripcion, usuario_rut, visita_id, cotizacion_id)
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id_solicitud;
         """,
         (
             data["fecha"],
-            data["estado"],
             data["descripcion"],
             data["usuario_rut"],
             data["visita_id"],
@@ -66,7 +66,7 @@ def Get():
         for row in rows
     ]
 
-def GetAllIngeniero(emplazamientos_id=None):
+def GetAllEmplazamiento(emplazamientos_id=None):
     print("Procesando GetAllIngeniero con emplazamientos_id:", emplazamientos_id)
     conn = get_connection()
     if conn is None:
@@ -74,7 +74,7 @@ def GetAllIngeniero(emplazamientos_id=None):
 
     cur = conn.cursor()
     query = """
-            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.id_emplazamiento
+            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.id_emplazamiento, e.nombre
             FROM Solicitud s
             INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
             INNER JOIN Asignatura a ON a.id_asignatura = sa.asignatura_id
@@ -104,7 +104,8 @@ def GetAllIngeniero(emplazamientos_id=None):
             "descripcion": row[3],
             "asignatura": row[4],
             "visita": row[5],
-            "emplazamiento": row[6]
+            "emplazamiento_id": row[6],
+            "emplazamiento": row[7]
         }
         for row in rows
     ]
@@ -149,7 +150,7 @@ def getPorEmplazamiento(emplazamiento_id):
         for row in rows
     ]
 
-def GetPorUnidad(usuario_rut, unidad_academica_id=None, query_from="funcionario"):
+def GetPorUnidad(usuario_rut=None, unidad_academica_id=None, query_from="funcionario"):
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
@@ -187,7 +188,37 @@ def GetPorUnidad(usuario_rut, unidad_academica_id=None, query_from="funcionario"
                         ORDER BY s.fecha DESC;
                     """
             cur.execute(query, (usuario_rut, unidad_academica_id))
-
+    elif query_from == "subdireccion":
+        if not unidad_academica_id:
+            query = """
+                SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar
+                FROM Solicitud s
+                INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
+                INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
+                INNER JOIN Visita v ON s.visita_id = v.id_visita
+                WHERE s.usuario_rut = %s
+                GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar
+                ORDER BY s.fecha DESC;
+            """
+            cur.execute(query, (usuario_rut,))
+        else:
+            query = """
+                        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar
+                        FROM Solicitud s
+                        INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
+                        INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
+                        INNER JOIN Visita v ON s.visita_id = v.id_visita
+                        WHERE s.usuario_rut = %s AND s.id_solicitud IN (
+                            SELECT s.id_solicitud
+                            FROM Solicitud s
+                            INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
+                            INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
+                            WHERE a.departamento_id = %s
+                        )
+                        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar
+                        ORDER BY s.fecha DESC;
+                    """
+            cur.execute(query, (usuario_rut, unidad_academica_id))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -381,91 +412,210 @@ def GetDetalle(id_solicitud):
     conn.close()
     return detalle
 
-def CambiarEstado(RUT, id_solicitud, decision, comentario=""):
+def get_estado_item(item_id, tipo_item):
+    """
+    Obtiene el estado actual de un ítem (colación o traslado)
+    
+    Args:
+        item_id (int): ID del ítem
+        tipo_item (str): Tipo de ítem ('colacion' o 'traslado')
+    
+    Returns:
+        dict: Información del estado actual del ítem
+    """
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
-
-    estados = [
-        {
-            0:0,
-            1:0,
-            2:0,
-            3:0,
-            4:1,
-            5:5,
-            6:6,
-        },
-        {
-            0:0,
-            1:3,
-            2:3,
-            3:4,
-            4:5,
-            5:6,
-            6:6
-        }
-    ]
-
-    query = """
-        SELECT estado FROM Solicitud WHERE id_solicitud = %s;
+    
+    tabla = "Colacion" if tipo_item == "colacion" else "Traslado"
+    query = f"""
+        SELECT estado, fecha_estado
+        FROM {tabla}
+        WHERE id = %s
     """
-    cur.execute(query, (id_solicitud,))
-    estado_actual = cur.fetchone()[0]
-
-    query = """
-        UPDATE Solicitud
-        SET estado = %s
-        WHERE id_solicitud = %s;
-    """
-
-    cur.execute(query, (estados[decision][estado_actual], id_solicitud))
-
-    query = """
-        INSERT INTO HistorialEstadoSolicitud (solicitud_id, fecha_decision, estado_anterior, usuario_decision_rut, comentario, decision)
-        VALUES (%s, NOW(), %s, %s, %s, %s);
-    """
-
-    cur.execute(query, (id_solicitud, estados[decision][estado_actual], RUT, comentario, decision))
-
-    conn.commit()
-
+    
+    cur.execute(query, (item_id,))
+    row = cur.fetchone()
+    
+    if not row:
+        cur.close()
+        conn.close()
+        return None
+        
+    estado = {
+        "estado": row[0],
+        "fecha": row[1]
+    }
+    
     cur.close()
     conn.close()
+    return estado
 
-def GetHistorial(id_solicitud):
+def cambiar_estado_item(item_id, tipo_item, nuevo_estado, usuario_rut):
+    """
+    Cambia el estado de un ítem y registra el cambio en el historial
+    
+    Args:
+        item_id (int): ID del ítem
+        tipo_item (str): Tipo de ítem ('colacion' o 'traslado')
+        nuevo_estado (int): Nuevo estado a asignar
+        usuario_rut (str): RUT del usuario que realiza el cambio
+    
+    Returns:
+        bool: True si el cambio fue exitoso, False en caso contrario
+    """
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
 
     cur = conn.cursor()
+    
+    try:
+        # Actualizar estado en la tabla principal
+        tabla = "Colacion" if tipo_item == "colacion" else "Traslado"
+        query = f"""
+            UPDATE {tabla}
+            SET estado = %s, fecha_estado = CURRENT_TIMESTAMP
+            WHERE id = %s
+            RETURNING id
+        """
+        
+        cur.execute(query, (nuevo_estado, item_id))
+        if not cur.fetchone():
+            raise Exception(f"No se encontró el ítem {item_id} de tipo {tipo_item}")
+            
+        # Registrar en historial
+        query_historial = """
+            INSERT INTO HistorialEstadoItem (item_id, tipo_item, estado_anterior, estado_nuevo, usuario_rut)
+            VALUES (%s, %s, (SELECT estado FROM {tabla} WHERE id = %s), %s, %s)
+        """
+        
+        cur.execute(query_historial, (item_id, tipo_item, item_id, nuevo_estado, usuario_rut))
+        
+        conn.commit()
+        return True
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al cambiar estado: {str(e)}")
+        return False
+        
+    finally:
+        cur.close()
+        conn.close()
 
-    query = '''
-    SELECT h.estado_anterior, h.decision, h.comentario, h.fecha_decision, h.usuario_decision_rut, u.first_name, u.last_name
-    FROM HistorialEstadoSolicitud AS h
-    JOIN Usuario AS u ON h.usuario_decision_rut = u.rut
-    WHERE h.solicitud_id = %s
-    ORDER BY h.fecha_decision ASC;
-    '''
+def get_historial_item(item_id, tipo_item):
+    """
+    Obtiene el historial de estados de un ítem
+    
+    Args:
+        item_id (int): ID del ítem
+        tipo_item (str): Tipo de ítem ('colacion' o 'traslado')
+    
+    Returns:
+        list: Lista de cambios de estado registrados
+    """
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
 
-    cur.execute(query, (id_solicitud,))
-
+    cur = conn.cursor()
+    
+    query = """
+        SELECT h.fecha_cambio, h.estado_anterior, h.estado_nuevo, 
+               u.first_name, u.last_name
+        FROM HistorialEstadoItem h
+        INNER JOIN Usuario u ON h.usuario_rut = u.rut
+        WHERE h.item_id = %s AND h.tipo_item = %s
+        ORDER BY h.fecha_cambio DESC
+    """
+    
+    cur.execute(query, (item_id, tipo_item))
     rows = cur.fetchall()
+    
+    historial = [
+        {
+            "fecha": row[0],
+            "estado_anterior": row[1],
+            "estado_nuevo": row[2],
+            "usuario": f"{row[3]} {row[4]}"
+        }
+        for row in rows
+    ]
+    
     cur.close()
     conn.close()
+    return historial
 
-    return [
-        {
-            "estado": r[0],
-            "estado_str": estados_dict_str[r[0]],
-            "decision": r[1],
-            "decision_str": "Aprobada" if r[1] else "Rechazada",
-            "comentario": r[2],
-            "fecha_decision": r[3],
-            "rut_decididor": r[4],
-            "nombre_decididor": f"{r[5]} {r[6]}"
-        }
-        for r in rows
-    ]
+def actualizar_estado_solicitud(solicitud_id):
+    """
+    Actualiza el estado de la solicitud basado en los estados de colación y traslado
+    
+    Args:
+        solicitud_id (int): ID de la solicitud
+    
+    Returns:
+        bool: True si la actualización fue exitosa, False en caso contrario
+    """
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    
+    try:
+        # Obtener estados actuales
+        query = """
+            SELECT c.estado as estado_colacion, t.estado as estado_traslado
+            FROM Solicitud s
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            LEFT JOIN Colacion col ON c.colacion_id = col.id
+            LEFT JOIN Traslado t ON c.traslado_id = t.id
+            WHERE s.id_solicitud = %s
+        """
+        
+        cur.execute(query, (solicitud_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            raise Exception(f"No se encontró la solicitud {solicitud_id}")
+            
+        estado_colacion = row[0]
+        estado_traslado = row[1]
+        
+        # Determinar estado de la solicitud
+        nuevo_estado = 0  # Por defecto rechazada
+        
+        if estado_colacion is not None and estado_traslado is not None:
+            # Si ambos están aprobados, la solicitud está aprobada
+            if estado_colacion == 1 and estado_traslado == 1:
+                nuevo_estado = 6  # Aprobada
+            # Si alguno está pendiente, la solicitud está en revisión
+            elif estado_colacion == 0 or estado_traslado == 0:
+                nuevo_estado = 3  # Revisión presupuesto
+            # Si alguno está rechazado, la solicitud está rechazada
+            elif estado_colacion == 2 or estado_traslado == 2:
+                nuevo_estado = 0  # Rechazada
+                
+        # Actualizar estado de la solicitud
+        query_update = """
+            UPDATE Solicitud
+            SET estado = %s
+            WHERE id_solicitud = %s
+        """
+        
+        cur.execute(query_update, (nuevo_estado, solicitud_id))
+        conn.commit()
+        return True
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al actualizar estado de solicitud: {str(e)}")
+        return False
+        
+    finally:
+        cur.close()
+        conn.close()
+

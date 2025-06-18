@@ -1,87 +1,172 @@
-VIND, integrantes: 
+# VIND: Sistema de Gestión de Solicitudes y Rendiciones
 
-* Sofía Ramírez  -  202273008-0
-* Marco Repetto - 202103059-K
+VIND es una plataforma web para la gestión de solicitudes, cotizaciones y rendiciones de gastos en el contexto universitario, permitiendo la interacción de distintos perfiles de usuario (funcionario, administrador y dirección) y la administración de presupuestos, visitas y documentos asociados.
 
-# BBDD
+---
 
-![Diagrama de la base de datos](DB_D.png)
+## Tecnologías Utilizadas
 
-# Aspectos técnicos
+* **Backend:** Python 3.12, FastAPI, Uvicorn, PostgreSQL, Pandas, Openpyxl
+* **Frontend:** React, Material UI, React Router, Axios
+* **Base de datos:** PostgreSQL
+* **Contenedores:** Docker
 
-## Requisitos
-
-- Docker
-- Docker Compose
+---
 
 ## Estructura del Proyecto
 
-- `backend/`: Contiene el código del backend en Python utilizando FastAPI.
-- `frontend/`: Contiene el código del frontend en JavaScript utilizando React.
-- `db/`: Contiene los scripts de inicialización de la base de datos.
-- `docker-compose.yml`: Archivo de configuración para Docker Compose.
+```
+VIND/
+  backend/         # API REST y lógica de negocio (FastAPI)
+    app/
+      main.py      # Punto de entrada del backend
+      poblar_bd.py # Script para poblar la base de datos
+      querys/      # Módulos de consulta y lógica de negocio
+      uploads/     # Archivos subidos (PDFs de cotizaciones, facturas, etc.)
+    Dockerfile     # Imagen Docker del backend
+  db/
+    init.sql       # Script de inicialización de la base de datos PostgreSQL
+  frontend/        # Aplicación web (React)
+    src/           # Código fuente del frontend
+      Pages/       # Páginas por perfil de usuario
+    Dockerfile     # Imagen Docker del frontend
+```
 
-## Despliegue
+---
 
-Sigue los siguientes pasos para desplegar el proyecto:
+## Instalación y Ejecución
 
-1. **Clonar el repositorio:**
+### Requisitos previos
 
-   ```sh
-   git clone https://gitlab.com/mixedpaipo/grupo03-2024-proyinf
-   cd grupo03-2024-proyinf
-   ```
+* Docker y Docker Compose
+* (Opcional) Python 3.12 y Node.js si se desea correr sin Docker
 
-2. **Construir y levantar los servicios con Docker Compose:**
+### 1. Clonar el repositorio
 
-   ```sh
-   docker-compose up --build
-   ```
+```bash
+git clone <url-del-repo>
+cd VIND
+```
 
-   Esto construirá las imágenes de Docker para el frontend, backend y la base de datos, y levantará los contenedores correspondientes.
+### 2. Configuración de la base de datos
 
-3. **Acceder a la aplicación:**
+* El archivo `db/init.sql` contiene la estructura de tablas y relaciones necesarias.
 
-   - Frontend: [http://localhost:3000](http://localhost:3000)
-   - Backend: [http://localhost:8000](http://localhost:8000)
+### 3. Backend (API)
 
-> **⚠️ Warning:** En caso de no funcionar el frontend, sobre el contenedor del frontend, ejecute el siguiente comando:
-> 
-> ```bash
-> npm install
-> ```
+#### Con Docker
 
-> **⚠️ Warning:** En caso de no funcionar el backend, reconstruir los contenedores.
+```bash
+cd backend
+docker build -t vind-backend .
+docker run -p 8000:8000 vind-backend
+```
 
-4. **Poblar la base de datos.**
+#### Manualmente
 
-   Creamos una nueva terminal y accedemos al contenedor del backend con el siguiente comando
-   ```sh
-   docker exec -it grupo03-2024-proyinf-backend-1 /bin/bash
-   ```
-   y ejecutamos
-   ```sh
-   python poblar_bd.py
-   ```
-Esto poblará la base de datos
-## Endpoints del Backend
+```bash
+cd backend/app
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-Los Endpoints del Backend se pueden encontrar [aquí](https://gitlab.com/mixedpaipo/grupo03-2024-proyinf/-/wikis/Servicios)
+### 4. Frontend (React)
 
-## Variables de Entorno
+#### Con Docker
 
-El archivo `docker-compose.yml` define las siguientes variables de entorno para el servicio de backend:
+```bash
+cd frontend
+docker build -t vind-frontend .
+docker run -p 3000:3000 vind-frontend
+```
 
-- `DATABASE_URL`: URL de conexión a la base de datos PostgreSQL.
+#### Manualmente
 
-## Scripts de Inicialización de la Base de Datos
+```bash
+cd frontend
+npm install
+npm start
+```
 
-Los scripts de inicialización de la base de datos se encuentran en el directorio `db/` y se ejecutan automáticamente cuando se levanta el contenedor de PostgreSQL.
+### 5. Acceso
 
-## Notas Adicionales
+* Frontend: [http://localhost:3000](http://localhost:3000)
+* Backend (API): [http://localhost:8000](http://localhost:8000)
 
-- Asegúrate de tener los puertos `3000`, `8000` y `5432` disponibles en tu máquina local.
-- Puedes modificar los archivos de configuración según tus necesidades específicas.
-- Para acceder a los distintos Dashboard es importante crear una cuenta y logearse con esos datos. o tomar prestado alguno de los datos creados por `python poblar_bd.py`
-- Los [estados](https://gitlab.com/mixedpaipo/grupo03-2024-proyinf/-/issues/9) de las rendiciones son: Pendiente, Aprobada, Por devolver, Devuelta, Rechazada.
-- El modelo de la base de datos se puede encontrar [aquí](https://gitlab.com/mixedpaipo/grupo03-2024-proyinf/-/issues/5)
+---
+
+## Nuevo Flujo de Solicitudes (Actualizado)
+
+### Roles:
+
+* **FUNC**: Funcionario que ingresa la solicitud
+* **ADM**: Administrador que revisa datos y carga factura
+* **DIR**: Dirección que firma cotización y factura
+
+### Etapas del Proceso:
+
+1. **FUNC** ingresa solicitud: rellena formulario con información general, adjunta cotización de colación y/o traslado (ambos opcionales, pero al menos uno debe existir). La solicitud se guarda con estado `pendiente_revision`.
+2. **ADM** revisa la solicitud: valida presupuesto, documentos y datos. Si hay errores, puede devolverla al funcionario con observaciones. Si todo está correcto, cambia el estado a `pendiente_firma`.
+3. **DIR** firma la cotización: si se aprueba, el estado cambia a `esperando_factura`. Si se rechaza, vuelve a `pendiente_revision`.
+4. **FUNC/ADM** carga la(s) factura(s): cada ítem (colación/traslado) puede tener factura distinta. El estado del ítem cambia a `factura_ingresada`.
+5. **DIR** firma la(s) factura(s): sube el PDF firmado, estado pasa a `pendiente_pago`.
+6. **ADM** envía a pago: estado final `pagado`.
+
+Cada ítem de la solicitud (colación/traslado) mantiene su estado de forma independiente.
+
+### Reglas y Estructura de Datos:
+
+* Una `solicitud` puede tener 1 o 2 ítems: `colación` y/o `traslado`.
+* Cada `item` tiene su propio flujo y estado.
+* Toda acción de cambio de estado queda registrada en una tabla `HistorialEstadoItem`.
+* Los usuarios `FUNC` pueden estar asociados a una o más `UnidadesAcademicas`.
+* Cada `UnidadAcademica` pertenece a un solo `Emplazamiento`.
+* Los usuarios `ADM` y `DIR` tienen acceso completo.
+
+---
+
+## Descripción de Componentes
+
+### Backend
+
+* **main.py**: API REST principal
+* **querys/**: consultas SQL y lógica de negocio por entidad
+* **uploads/**: carpeta de PDFs subidos
+* **poblar\_bd.py**: script para poblar la BD con datos iniciales
+
+### Frontend
+
+* **Pages/**: páginas por perfil
+
+  * FUNC: formulario solicitud, seguimiento
+  * ADM: revisión de solicitudes, carga factura, envío a pago
+  * DIR: firma cotización y factura
+
+---
+
+## Ejemplo de Uso Básico
+
+1. FUNC inicia sesión y crea una solicitud.
+2. ADM revisa la solicitud y la aprueba.
+3. DIR firma la cotización.
+4. ADM o FUNC carga factura(s).
+5. DIR firma la factura.
+6. ADM marca como pagada.
+
+---
+
+## To Do
+
+* [ ] Refactorizar modelo de datos según nuevo flujo
+* [ ] Implementar tabla `HistorialEstadoItem`
+* [ ] Separar estados por ítem (colación y traslado)
+* [ ] Página de seguimiento de estado por solicitud
+* [ ] Validación por rol en frontend
+* [ ] Subida de facturas firmadas por parte de Dirección
+* [ ] Registro de comentarios y timestamps en todos los cambios de estado
+
+---
+
+## Licencia
+
+MIT License

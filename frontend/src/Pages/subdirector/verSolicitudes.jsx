@@ -18,7 +18,7 @@ export function VerSolicitudesS({ rut }) {
         // Obtener unidades académicas disponibles
         const fetchEmplazamientos = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/ingeniero/emplazamiento`);
+                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/subdirector/emplazamiento`);
                 setEmplazamientos(response.data);
             } catch (err) {
                 setError(
@@ -31,29 +31,43 @@ export function VerSolicitudesS({ rut }) {
     }, []);
 
     rut = localStorage.getItem("userRut");
+    const fetchSolicitudes = async () => {
+        try {
+            let url = `http://localhost:8000/solicitudes/subdirector/${rut}`;
+            const params = new URLSearchParams();
+
+            if (emplazamientoId) params.append("emplazamiento_id", emplazamientoId);
+            if (unidadId !== null && unidadId !== "") {
+                params.append("unidad_academica_id", unidadId);
+            }
+
+            url += `?${params.toString()}`;
+
+            const response = await axios.get(url);
+            console.log(response.data);
+            setSolicitudes(response.data);
+        } catch (err) {
+            setError(
+                err.response?.data?.detail || "Error al obtener las solicitudes."
+            );
+        }
+    };
+
+    const handleEmplazamientoChange = (e) => {
+        const selectedEmplazamientoId = e.target.value || null;
+        setEmplazamientoId(selectedEmplazamientoId);
+        setUnidadId(null); // Reset unidadId when changing emplazamiento
+
+        fetchSolicitudes(); // Fetch solicitudes when changing emplazamiento
+    }
+
+    const handleUnidadChange = (e) => {
+        const selectedUnidadId = e.target.value || null;
+        setUnidadId(selectedUnidadId);
+        fetchSolicitudes(); // Fetch solicitudes when changing emplazamiento
+    }
 
     useEffect(() => {
-        const fetchSolicitudes = async () => {
-            try {
-                let url = `http://localhost:8000/solicitudes/ingeniero/${rut}`;
-                const params = new URLSearchParams();
-
-                if (emplazamientoId) params.append("emplazamiento_id", emplazamientoId);
-                if (unidadId !== null && unidadId !== "") {
-                    params.append("unidad_academica_id", unidadId);
-                }                
-
-                url += `?${params.toString()}`;
-
-                const response = await axios.get(url);
-                setSolicitudes(response.data);
-            } catch (err) {
-                setError(
-                    err.response?.data?.detail || "Error al obtener las solicitudes."
-                );
-            }
-        };
-
         fetchSolicitudes();
     }, [rut, emplazamientoId, unidadId]);
 
@@ -98,7 +112,7 @@ export function VerSolicitudesS({ rut }) {
                 <select
                     id="unidadAcademica"
                     value={emplazamientoId || ""}
-                    onChange={(e) => setEmplazamientoId(e.target.value || null)}
+                    onChange={handleEmplazamientoChange}
                 >
                     <option value="">Todas</option>
                     {emplazamientos.map((unidad) => (
@@ -114,7 +128,7 @@ export function VerSolicitudesS({ rut }) {
                 <select
                     id="unidadAcademica"
                     value={unidadId || ""}
-                    onChange={(e) => setUnidadId(e.target.value || null)}
+                    onChange={handleUnidadChange}
                 >
                     <option value="">Todas</option>
                     {unidades.map((unidad) => (
@@ -147,12 +161,12 @@ export function VerSolicitudesS({ rut }) {
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
                         <td>{solicitud.visita}</td>
-                        <td><a href={`/ingeniero/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
+                        <td><a href={`/subdireccion/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
                     </tr>
                 ))}
                 </tbody>
             </table>
-            <button className="volver-btn" onClick={() => navigate("/ingeniero/dashboard")}>Volver</button>
+            <button className="volver-btn" onClick={() => navigate("/subdireccion/dashboard")}>Volver</button>
         </div>
     );
 }
