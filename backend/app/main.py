@@ -999,68 +999,6 @@ async def descargar_factura_firmada(tipo: str, id: int):
         cur.close()
         conn.close()
 
-@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar-cotizacion")
-def aprobar_cotizacion_general(id_solicitud: int, RUT: str):
-    try:
-        Solicitud.CambiarEstado(RUT, id_solicitud, 4)
-        return {"message": "Cotización aprobada"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@solicitud_router.post("/{id_solicitud}/{RUT}/rechazar-cotizacion")
-def rechazar_cotizacion_general(id_solicitud: int, RUT: str, comentario: str = Query(...)):
-    try:
-        Solicitud.CambiarEstado(RUT, id_solicitud, 2, comentario)
-        return {"message": "Cotización rechazada"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/solicitudes/{id_solicitud}/firmar-factura-director")
-async def firmar_facturas_director(
-    id_solicitud: int,
-    usuario_rut: str = Form(...),
-    factura_firmada_colacion: Optional[UploadFile] = File(None),
-    factura_firmada_traslado: Optional[UploadFile] = File(None)
-):
-    try:
-        if factura_firmada_colacion:
-            conn = get_connection()
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT c.colacion_id
-                FROM Solicitud s
-                JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
-                WHERE s.id_solicitud = %s
-            """, (id_solicitud,))
-            col_id = cur.fetchone()[0]
-            cur.close()
-            conn.close()
-            if col_id:
-                await guardar_factura_firmada("colacion", col_id, factura_firmada_colacion)
-                actualizar_estado_item("colacion", col_id, id_solicitud, "esperando_pago", usuario_rut, "Factura firmada por dirección")
-
-        if factura_firmada_traslado:
-            conn = get_connection()
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT c.traslado_id
-                FROM Solicitud s
-                JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
-                WHERE s.id_solicitud = %s
-            """, (id_solicitud,))
-            tr_id = cur.fetchone()[0]
-            cur.close()
-            conn.close()
-            if tr_id:
-                await guardar_factura_firmada("traslado", tr_id, factura_firmada_traslado)
-                actualizar_estado_item("traslado", tr_id, id_solicitud, "esperando_pago", usuario_rut, "Factura firmada por dirección")
-
-        return {"message": "Facturas firmadas exitosamente"}
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 app.include_router(user_router)
 app.include_router(solicitud_router)
 app.include_router(emplazamiento_router)

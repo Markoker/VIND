@@ -7,7 +7,7 @@ def get_connection():
     # Establece la conexión a la base de datos y retorna el objeto de conexión
     try:
         conn = psycopg2.connect(
-            database=os.getenv('DB_NAME', 'proyecto_db'),
+            database=os.getenv('DB_NAME', 'vind'),
             user=os.getenv('DB_USER', 'ayds123'),
             password=os.getenv('DB_PASS', 'ayds123'),
             host=os.getenv('DB_HOST', 'db'),               # Asegúrate de que la contraseña sea la misma que en docker-compose.yml        
