@@ -138,6 +138,9 @@ CREATE TABLE Traslado (
     cotizacion_1 TEXT,
     cotizacion_2 TEXT,
     cotizacion_3 TEXT,
+    cotizacion_firmada TEXT,
+    factura TEXT,
+    factura_firmada TEXT,
     estado VARCHAR(32) DEFAULT 'pendiente_revision'
 );
 
@@ -159,6 +162,9 @@ CREATE TABLE Colacion (
     cotizacion_1 TEXT,
     cotizacion_2 TEXT,
     cotizacion_3 TEXT,
+    cotizacion_firmada TEXT,
+    factura TEXT,
+    factura_firmada TEXT,
     monto INT,
     reembolso_id INT,
     estado VARCHAR(32) DEFAULT 'pendiente_revision',

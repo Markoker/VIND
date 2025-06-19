@@ -2,12 +2,11 @@ import {useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import axios from "axios";
 
-export function DetalleSolicitudI() {
+export function DetalleCotizacionDirector() {
     const {id} = useParams();
     const [detalle, setDetalle] = useState(null);
     const [error, setError] = useState("");
     const navigate = useNavigate();
-    const rut = localStorage.getItem("userRut");
 
     useEffect(() => {
         const fetchDetalle = async () => {
@@ -28,24 +27,15 @@ export function DetalleSolicitudI() {
         0: "Rechazada",
         1: "En revisión",
         2: "Revisión de requisitos",
-        3: "Autorización de presupuesto",
-        4: "Firma de cotización",
-        5: "Orden de compra",
-        6: "Aprobada"
-    };
-
-    const estadosItem = {
-        "pendiente_revision": "Pendiente de revisión",
-        "aprobado": "Aprobado",
-        "rechazado": "Rechazado",
-        "en_revision": "En revisión",
-        "pendiente_firma": "Pendiente de firma",
-        "orden_compra": "Orden de compra enviada"
+        3: "Esperando firma de cotización",
+        4: "Esperando factura",
+        5: "Esperando firma de factura",
+        6: "Pagada"
     };
 
     return (
         <div style={{padding: "20px"}}>
-            <h1>Detalle de Solicitud #{detalle.id}</h1>
+            <h1>Detalle de Cotización - Solicitud #{detalle.id}</h1>
             
             <div style={{marginBottom: "20px"}}>
                 <h3>Información General</h3>
@@ -147,7 +137,7 @@ export function DetalleSolicitudI() {
             )}
 
             <br/>
-            <button onClick={() => navigate("/administrador/solicitudes")}>Volver</button>
+            <button onClick={() => navigate("/director/solicitudes")}>Volver</button>
         </div>
     );
-}
+} 

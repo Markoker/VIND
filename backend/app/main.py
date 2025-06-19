@@ -9,6 +9,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from querys.utils import *
+from querys.utils import get_connection
 import querys.cotizacion as Cotizacion
 import querys.emplazamiento as Emplazamiento
 import querys.solicitud as Solicitud
@@ -281,7 +282,7 @@ def get_solicitud_detalle(id_solicitud: int):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar")
+@solicitud_router.post("/{id_solicitud}/{RUT}/")
 def aprobar_solicitud(id_solicitud: int, RUT: str):
     try:
         Solicitud.CambiarEstado(RUT, id_solicitud, 1)
@@ -294,6 +295,144 @@ def rechazar_solicitud(id_solicitud: int, RUT: str, comentario: str):
     try:
         Solicitud.CambiarEstado(RUT, id_solicitud, 0, comentario)
         return {"message": "Solicitud rechazada"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar-requisitos")
+def aprobar_requisitos_solicitud(id_solicitud: int, RUT: str):
+    try:
+        Solicitud.CambiarEstado(RUT, id_solicitud, 3)
+        return {"message": "Requisitos aprobados, solicitud en espera de firma de cotización"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar-cotizacion-colacion-director")
+async def aprobar_cotizacion_colacion_director(id_solicitud: int, RUT: str, archivo: UploadFile = File(...)):
+    try:
+        # Obtener el ID de colación de la solicitud
+        conn = get_connection()
+        if conn is None:
+            raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
+        
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT c.colacion_id
+            FROM Solicitud s
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            WHERE s.id_solicitud = %s
+        """, (id_solicitud,))
+        
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="No se encontró colación para esta solicitud")
+        
+        colacion_id = result[0]
+        cur.close()
+        conn.close()
+        
+        # Primero guardar la cotización firmada
+        await guardar_cotizacion_firmada("colacion", colacion_id, archivo)
+        
+        # Luego cambiar el estado del ítem
+        from querys.cotizacion import actualizar_estado_item
+        actualizar_estado_item("colacion", colacion_id, id_solicitud, "esperando_factura", RUT, "Cotización firmada por director")
+        
+        return {"message": "Cotización de colación aprobada exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/rechazar-cotizacion-colacion-director")
+def rechazar_cotizacion_colacion_director(id_solicitud: int, RUT: str, comentario: str):
+    try:
+        # Obtener el ID de colación de la solicitud
+        conn = get_connection()
+        if conn is None:
+            raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
+        
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT c.colacion_id
+            FROM Solicitud s
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            WHERE s.id_solicitud = %s
+        """, (id_solicitud,))
+        
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="No se encontró colación para esta solicitud")
+        
+        colacion_id = result[0]
+        cur.close()
+        conn.close()
+        
+        from querys.cotizacion import actualizar_estado_item
+        actualizar_estado_item("colacion", colacion_id, id_solicitud, "en_revision", RUT, comentario)
+        return {"message": "Cotización de colación rechazada exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar-cotizacion-traslado-director")
+async def aprobar_cotizacion_traslado_director(id_solicitud: int, RUT: str, archivo: UploadFile = File(...)):
+    try:
+        # Obtener el ID de traslado de la solicitud
+        conn = get_connection()
+        if conn is None:
+            raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
+        
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT c.traslado_id
+            FROM Solicitud s
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            WHERE s.id_solicitud = %s
+        """, (id_solicitud,))
+        
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="No se encontró traslado para esta solicitud")
+        
+        traslado_id = result[0]
+        cur.close()
+        conn.close()
+        
+        # Primero guardar la cotización firmada
+        await guardar_cotizacion_firmada("traslado", traslado_id, archivo)
+        
+        # Luego cambiar el estado del ítem
+        from querys.cotizacion import actualizar_estado_item
+        actualizar_estado_item("traslado", traslado_id, id_solicitud, "esperando_factura", RUT, "Cotización firmada por director")
+        
+        return {"message": "Cotización de traslado aprobada exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.post("/{id_solicitud}/{RUT}/rechazar-cotizacion-traslado-director")
+def rechazar_cotizacion_traslado_director(id_solicitud: int, RUT: str, comentario: str):
+    try:
+        # Obtener el ID de traslado de la solicitud
+        conn = get_connection()
+        if conn is None:
+            raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
+        
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT c.traslado_id
+            FROM Solicitud s
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            WHERE s.id_solicitud = %s
+        """, (id_solicitud,))
+        
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="No se encontró traslado para esta solicitud")
+        
+        traslado_id = result[0]
+        cur.close()
+        conn.close()
+        
+        from querys.cotizacion import actualizar_estado_item
+        actualizar_estado_item("traslado", traslado_id, id_solicitud, "en_revision", RUT, comentario)
+        return {"message": "Cotización de traslado rechazada exitosamente"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -530,6 +669,169 @@ async def guardar_archivo_cotizacion(
 
     return {"message": "Archivo guardado exitosamente.", "ruta_archivo": ruta_archivo}
 
+@app.post("/cotizacion/{tipo}/{id}/cotizacion-firmada")
+async def guardar_cotizacion_firmada(
+    tipo: str,
+    id: int,
+    archivo: UploadFile = File(...)
+):
+    """
+    Guarda un archivo PDF de cotización firmada en la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    :param archivo: Archivo PDF firmado a guardar.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    # Verificar que el archivo sea un PDF
+    if archivo.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="El archivo debe ser un PDF.")
+
+    # Guardar el archivo en el sistema de archivos
+    ruta_archivo = f"uploads/{tipo}/cotizacion_firmada_{id}.pdf"
+    os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+    with open(ruta_archivo, "wb") as f:
+        f.write(archivo.file.read())
+
+    # Actualizar la base de datos
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    try:
+        if tipo == "traslado":
+            cur.execute("UPDATE Traslado SET cotizacion_firmada = %s WHERE id = %s;", (ruta_archivo, id))
+        elif tipo == "colacion":
+            cur.execute("UPDATE Colacion SET cotizacion_firmada = %s WHERE id = %s;", (ruta_archivo, id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Cotización firmada guardada exitosamente.", "ruta_archivo": ruta_archivo}
+
+@app.post("/cotizacion/{tipo}/{id}/factura")
+async def guardar_factura(
+    tipo: str,
+    id: int,
+    archivo: UploadFile = File(...)
+):
+    """
+    Guarda un archivo PDF de factura en la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    :param archivo: Archivo PDF de factura a guardar.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    # Verificar que el archivo sea un PDF
+    if archivo.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="El archivo debe ser un PDF.")
+
+    # Guardar el archivo en el sistema de archivos
+    ruta_archivo = f"uploads/{tipo}/factura_{id}.pdf"
+    os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+    with open(ruta_archivo, "wb") as f:
+        f.write(archivo.file.read())
+
+    # Actualizar la base de datos
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    try:
+        if tipo == "traslado":
+            cur.execute("UPDATE Traslado SET factura = %s WHERE id = %s;", (ruta_archivo, id))
+        elif tipo == "colacion":
+            cur.execute("UPDATE Colacion SET factura = %s WHERE id = %s;", (ruta_archivo, id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Factura guardada exitosamente.", "ruta_archivo": ruta_archivo}
+
+@app.post("/cotizacion/{tipo}/{id}/factura-firmada")
+async def guardar_factura_firmada(
+    tipo: str,
+    id: int,
+    archivo: UploadFile = File(...)
+):
+    """
+    Guarda un archivo PDF de factura firmada en la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    :param archivo: Archivo PDF de factura firmada a guardar.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    # Verificar que el archivo sea un PDF
+    if archivo.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="El archivo debe ser un PDF.")
+
+    # Guardar el archivo en el sistema de archivos
+    ruta_archivo = f"uploads/{tipo}/factura_firmada_{id}.pdf"
+    os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+    with open(ruta_archivo, "wb") as f:
+        f.write(archivo.file.read())
+
+    # Actualizar la base de datos
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    try:
+        if tipo == "traslado":
+            cur.execute("UPDATE Traslado SET factura_firmada = %s WHERE id = %s;", (ruta_archivo, id))
+        elif tipo == "colacion":
+            cur.execute("UPDATE Colacion SET factura_firmada = %s WHERE id = %s;", (ruta_archivo, id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Factura firmada guardada exitosamente.", "ruta_archivo": ruta_archivo}
+
+@solicitud_router.put("/{id_solicitud}/{item_tipo}/{item_id}/estado")
+def cambiar_estado_item(id_solicitud: int, item_tipo: str, item_id: int, estado_nuevo: str = Body(...), usuario_rut: str = Body(...), comentario: str = Body(None)):
+    """
+    Cambia el estado de un ítem (colacion o traslado) y registra el historial.
+    """
+    if item_tipo not in ["colacion", "traslado"]:
+        raise HTTPException(status_code=400, detail="Tipo de ítem no válido.")
+    try:
+        actualizar_estado_item(item_tipo, item_id, id_solicitud, estado_nuevo, usuario_rut, comentario)
+        return {"message": f"Estado de {item_tipo} actualizado a {estado_nuevo}"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@solicitud_router.get("/{id_solicitud}/{item_tipo}/{item_id}/historial")
+def historial_estado_item(id_solicitud: int, item_tipo: str, item_id: int):
+    """
+    Devuelve el historial de cambios de estado de un ítem (colacion o traslado).
+    """
+    if item_tipo not in ["colacion", "traslado"]:
+        raise HTTPException(status_code=400, detail="Tipo de ítem no válido.")
+    try:
+        historial = obtener_historial_item(item_tipo, item_id)
+        return {"historial": historial}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/cotizacion/{tipo}/{id}/cotizacion/{cotizacion_n}", response_class=FileResponse)
 async def descargar_archivo_cotizacion(tipo: str, id: int, cotizacion_n: int):
@@ -577,31 +879,125 @@ async def descargar_archivo_cotizacion(tipo: str, id: int, cotizacion_n: int):
         cur.close()
         conn.close()
 
-@solicitud_router.put("/{id_solicitud}/{item_tipo}/{item_id}/estado")
-def cambiar_estado_item(id_solicitud: int, item_tipo: str, item_id: int, estado_nuevo: str = Body(...), usuario_rut: str = Body(...), comentario: str = Body(None)):
+@app.get("/cotizacion/{tipo}/{id}/cotizacion-firmada", response_class=FileResponse)
+async def descargar_cotizacion_firmada(tipo: str, id: int):
     """
-    Cambia el estado de un ítem (colacion o traslado) y registra el historial.
+    Descarga un archivo PDF de cotización firmada desde la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
     """
-    if item_tipo not in ["colacion", "traslado"]:
-        raise HTTPException(status_code=400, detail="Tipo de ítem no válido.")
-    try:
-        actualizar_estado_item(item_tipo, item_id, id_solicitud, estado_nuevo, usuario_rut, comentario)
-        return {"message": f"Estado de {item_tipo} actualizado a {estado_nuevo}"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
 
-@solicitud_router.get("/{id_solicitud}/{item_tipo}/{item_id}/historial")
-def historial_estado_item(id_solicitud: int, item_tipo: str, item_id: int):
-    """
-    Devuelve el historial de cambios de estado de un ítem (colacion o traslado).
-    """
-    if item_tipo not in ["colacion", "traslado"]:
-        raise HTTPException(status_code=400, detail="Tipo de ítem no válido.")
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
     try:
-        historial = obtener_historial_item(item_tipo, item_id)
-        return {"historial": historial}
+        if tipo == "traslado":
+            cur.execute("SELECT cotizacion_firmada FROM Traslado WHERE id = %s;", (id,))
+        elif tipo == "colacion":
+            cur.execute("SELECT cotizacion_firmada FROM Colacion WHERE id = %s;", (id,))
+
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+
+        ruta_archivo = result[0]
+        if not os.path.exists(ruta_archivo):
+            raise HTTPException(status_code=404, detail="El archivo no existe en el servidor.")
+
+        return FileResponse(
+            path=ruta_archivo,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(ruta_archivo)}"}
+        )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error al obtener el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+@app.get("/cotizacion/{tipo}/{id}/factura", response_class=FileResponse)
+async def descargar_factura(tipo: str, id: int):
+    """
+    Descarga un archivo PDF de factura desde la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    try:
+        if tipo == "traslado":
+            cur.execute("SELECT factura FROM Traslado WHERE id = %s;", (id,))
+        elif tipo == "colacion":
+            cur.execute("SELECT factura FROM Colacion WHERE id = %s;", (id,))
+
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+
+        ruta_archivo = result[0]
+        if not os.path.exists(ruta_archivo):
+            raise HTTPException(status_code=404, detail="El archivo no existe en el servidor.")
+
+        return FileResponse(
+            path=ruta_archivo,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(ruta_archivo)}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+@app.get("/cotizacion/{tipo}/{id}/factura-firmada", response_class=FileResponse)
+async def descargar_factura_firmada(tipo: str, id: int):
+    """
+    Descarga un archivo PDF de factura firmada desde la tabla Traslado o Colacion.
+    :param tipo: 'traslado' o 'colacion'.
+    :param id: ID del registro en la tabla correspondiente.
+    """
+    if tipo not in ["traslado", "colacion"]:
+        raise HTTPException(status_code=400, detail="Tipo no válido. Debe ser 'traslado' o 'colacion'.")
+
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos.")
+    cur = conn.cursor()
+
+    try:
+        if tipo == "traslado":
+            cur.execute("SELECT factura_firmada FROM Traslado WHERE id = %s;", (id,))
+        elif tipo == "colacion":
+            cur.execute("SELECT factura_firmada FROM Colacion WHERE id = %s;", (id,))
+
+        result = cur.fetchone()
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+
+        ruta_archivo = result[0]
+        if not os.path.exists(ruta_archivo):
+            raise HTTPException(status_code=404, detail="El archivo no existe en el servidor.")
+
+        return FileResponse(
+            path=ruta_archivo,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(ruta_archivo)}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener el archivo: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
 
 app.include_router(user_router)
 app.include_router(solicitud_router)

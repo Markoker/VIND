@@ -2,7 +2,7 @@ import {useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import axios from "axios";
 
-export function DetalleSolicitudI() {
+export function DetalleSolicitudF() {
     const {id} = useParams();
     const [detalle, setDetalle] = useState(null);
     const [error, setError] = useState("");
@@ -45,7 +45,7 @@ export function DetalleSolicitudI() {
 
     return (
         <div style={{padding: "20px"}}>
-            <h1>Detalle de Solicitud #{detalle.id}</h1>
+            <h1>Mi Solicitud #{detalle.id}</h1>
             
             <div style={{marginBottom: "20px"}}>
                 <h3>Información General</h3>
@@ -53,14 +53,6 @@ export function DetalleSolicitudI() {
                     <p><strong>Fecha:</strong> {new Date(detalle.fecha).toLocaleDateString()}</p>
                     <p><strong>Estado:</strong> {estados[detalle.estado] || "Desconocido"}</p>
                     <p><strong>Descripción:</strong> {detalle.descripcion}</p>
-                </div>
-            </div>
-
-            <div style={{marginBottom: "20px"}}>
-                <h3>Usuario Solicitante</h3>
-                <div style={{display: "flex", gap: "30px"}}>
-                    <p><strong>RUT:</strong> {detalle.usuario.rut}</p>
-                    <p><strong>Nombre:</strong> {detalle.usuario.nombre}</p>
                 </div>
             </div>
 
@@ -147,7 +139,7 @@ export function DetalleSolicitudI() {
             )}
 
             <br/>
-            <button onClick={() => navigate("/administrador/solicitudes")}>Volver</button>
+            <button onClick={() => navigate("/funcionario/dashboard")}>Volver</button>
         </div>
     );
-}
+} 

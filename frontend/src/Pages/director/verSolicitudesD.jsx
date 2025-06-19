@@ -82,10 +82,19 @@ export function VerSolicitudesD({ rut }) {
         0: "Rechazada",
         1: "En revisión",
         2: "Revisión de requisitos",
-        3: "Autorización de presupuesto",
-        4: "Firma de cotización",
-        5: "Orden de compra",
-        6: "Aprobada"
+        3: "Esperando firma de cotización",
+        4: "Esperando factura",
+        5: "Esperando firma de factura",
+        6: "Pagada"
+    };
+    const estadosItem = {
+        "pendiente_revision": "Pendiente de revisión",
+        "pagada": "Pagada",
+        "rechazado": "Rechazado",
+        "en_revision": "En revisión",
+        "pendiente_firma": "Pendiente de firma",
+        "esperando_factura": "Esperando factura",
+        "esperando_firma_factura": "Esperando firma de factura"
     };
 
     return (
@@ -131,10 +140,15 @@ export function VerSolicitudesD({ rut }) {
                     <th>ID</th>
                     <th>Fecha</th>
                     <th>Estado</th>
+                    <th>Estado Colación</th>
+                    <th>Colación</th>
+                    <th>Estado Traslado</th>
+                    <th>Traslado</th>
                     <th>Descripción</th>
                     <th>Emplazamiento</th>
                     <th>Asignatura</th>
                     <th>Visita</th>
+                    <th>Acciones</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -143,11 +157,82 @@ export function VerSolicitudesD({ rut }) {
                         <td>{solicitud.id_solicitud}</td>
                         <td>{new Date(solicitud.fecha).toLocaleDateString()}</td>
                         <td>{estados[Number(solicitud.estado)] || "Desconocido"}</td>
+                        <td>{solicitud.estado_colacion ? estadosItem[solicitud.estado_colacion] || solicitud.estado_colacion : "No aplica"}</td>
+                        <td>
+                            {solicitud.estado_colacion && solicitud.estado_colacion !== "No aplica" ? (
+                                <button 
+                                    onClick={() => {
+                                        // Estado pendiente_firma: director puede firmar cotización
+                                        if (solicitud.estado_colacion === "pendiente_firma") {
+                                            navigate(`/director/firmar-cotizacion-colacion/${solicitud.id_solicitud}`);
+                                        }
+                                        // Estado factura_ingresada: director puede firmar factura
+                                        else if (solicitud.estado_colacion === "factura_ingresada") {
+                                            navigate(`/director/firmar-factura-colacion/${solicitud.id_solicitud}`);
+                                        }
+                                        // Otros estados: solo visualización
+                                        else {
+                                            navigate(`/director/detalle-colacion/${solicitud.id_solicitud}`);
+                                        }
+                                    }}
+                                    style={{backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer"}}
+                                >
+                                    {solicitud.estado_colacion === "pendiente_firma" ? "Firmar Cotización" :
+                                     solicitud.estado_colacion === "factura_ingresada" ? "Firmar Factura" : "Ver Colación"}
+                                </button>
+                            ) : (
+                                "NA"
+                            )}
+                        </td>
+                        
+                        <td>{solicitud.estado_traslado ? estadosItem[solicitud.estado_traslado] || solicitud.estado_traslado : "No aplica"}</td>
+                        
+                        <td>
+                            {solicitud.estado_traslado && solicitud.estado_traslado !== "No aplica" ? (
+                                <button 
+                                    onClick={() => {
+                                        // Estado pendiente_firma: director puede firmar cotización
+                                        if (solicitud.estado_traslado === "pendiente_firma") {
+                                            navigate(`/director/firmar-cotizacion-traslado/${solicitud.id_solicitud}`);
+                                        }
+                                        // Estado factura_ingresada: director puede firmar factura
+                                        else if (solicitud.estado_traslado === "factura_ingresada") {
+                                            navigate(`/director/firmar-factura-traslado/${solicitud.id_solicitud}`);
+                                        }
+                                        // Otros estados: solo visualización
+                                        else {
+                                            navigate(`/director/detalle-traslado/${solicitud.id_solicitud}`);
+                                        }
+                                    }}
+                                    style={{backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer"}}
+                                >
+                                    {solicitud.estado_traslado === "pendiente_firma" ? "Firmar Cotización" :
+                                     solicitud.estado_traslado === "factura_ingresada" ? "Firmar Factura" : "Ver Traslado"}
+                                </button>
+                            ) : (
+                                "NA"
+                            )}
+                        </td>
                         <td>{solicitud.descripcion}</td>
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
                         <td>{solicitud.visita}</td>
-                        <td><a href={`/director/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
+                        <td>
+                            <button 
+                                onClick={() => {
+                                    // Si el estado es 3, el director puede firmar cotización
+                                    if (solicitud.estado === 3) {
+                                        navigate(`/director/firmar-cotizacion/${solicitud.id_solicitud}`);
+                                    } else {
+                                        // Para otros estados, solo ver el detalle
+                                        navigate(`/director/solicitudes/${solicitud.id_solicitud}`);
+                                    }
+                                }}
+                                style={{backgroundColor: "blue", color: "white", padding: "5px 10px", border: "none", cursor: "pointer"}}
+                            >
+                                Ver
+                            </button>
+                        </td>
                     </tr>
                 ))}
                 </tbody>

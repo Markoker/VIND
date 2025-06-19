@@ -97,15 +97,29 @@ def actualizar_estado_item(item_tipo, item_id, solicitud_id, estado_nuevo, usuar
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")
     cur = conn.cursor()
-    # Obtener estado anterior
-    cur.execute(f"SELECT estado FROM {item_tipo.capitalize()} WHERE id = %s", (item_id,))
-    estado_anterior = cur.fetchone()[0]
-    # Actualizar estado
-    cur.execute(f"UPDATE {item_tipo.capitalize()} SET estado = %s WHERE id = %s", (estado_nuevo, item_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    # Registrar historial
-    registrar_historial_estado_item(solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_rut, comentario)
-    # Actualizar estado de la solicitud según los ítems
-    actualizar_estado_solicitud(solicitud_id)
+    
+    try:
+        # Obtener estado anterior
+        cur.execute(f"SELECT estado FROM {item_tipo.capitalize()} WHERE id = %s", (item_id,))
+        result = cur.fetchone()
+        if result is None:
+            raise Exception(f"No se encontró el ítem {item_id} de tipo {item_tipo}")
+        
+        estado_anterior = result[0]
+        
+        # Actualizar estado
+        cur.execute(f"UPDATE {item_tipo.capitalize()} SET estado = %s WHERE id = %s", (estado_nuevo, item_id))
+        conn.commit()
+        
+        # Registrar historial
+        registrar_historial_estado_item(solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_rut, comentario)
+        
+        # Actualizar estado de la solicitud según los ítems
+        actualizar_estado_solicitud(solicitud_id, usuario_rut)
+        
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close()
+        conn.close()

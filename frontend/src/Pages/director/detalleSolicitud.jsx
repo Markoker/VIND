@@ -2,7 +2,7 @@ import {useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import axios from "axios";
 
-export function DetalleSolicitudI() {
+export function DetalleSolicitudD() {
     const {id} = useParams();
     const [detalle, setDetalle] = useState(null);
     const [error, setError] = useState("");
@@ -147,7 +147,7 @@ export function DetalleSolicitudI() {
             )}
 
             <br/>
-            <button onClick={() => navigate("/administrador/solicitudes")}>Volver</button>
+            <button onClick={() => navigate("/director/solicitudes")}>Volver</button>
         </div>
     );
-}
+} 

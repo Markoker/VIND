@@ -13,16 +13,16 @@ import { Dashboard } from './Pages/Dashboard';
 import { DashboardFuncionario } from './Pages/funcionario/dashboard-funcionario';
 import { DatosAsignatura } from './Pages/funcionario/solicitud/DatosAsignatura';
 import { DatosVisita } from './Pages/funcionario/solicitud/DatosVisita';
-import { VerSolicitudesS } from './Pages/subdirector/verSolicitudes';
-import { DashboardSubdirector } from './Pages/subdirector/dashboard-subdirector';
 //import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 import { Presupuestos } from './Pages/Presupuesto';
 import { DetalleSolicitudI } from './Pages/administrador/detalleSolicitud';
-import { DetalleSolicitudS } from './Pages/subdirector/detalleSolicitud';
+import { RevisarSolicitud } from './Pages/administrador/revisarSolicitud';
 import { DashboardDirector } from './Pages/director/dashboard-director';
 import { VerSolicitudesD } from './Pages/director/verSolicitudesD';
-import { DetalleCotizacion } from './Pages/director/cotizacion';
+import { DetalleSolicitudD } from './Pages/director/detalleSolicitud';
+import { FirmarCotizacion } from './Pages/director/firmarCotizacion';
+import { DetalleSolicitudF } from './Pages/funcionario/detalleSolicitud';
 // import { DashboardContador } from './Pages/contador/Dashboard-contador';
 // import { DashboardJefe } from './Pages/jefe/Dashboard-jefe';
 /*
@@ -41,6 +41,23 @@ import { Logout } from './Pages/Login/logout';
 import {Encargados} from "./Pages/funcionario/solicitud/encargados";
 import {DashboardAdministrador} from "./Pages/administrador/dashboard-administrador";
 import {SolicitudI} from "./Pages/administrador/solicitud/solicitudI";
+
+// Nuevas importaciones para páginas por ítem
+// Administrador
+import { SubirFacturaColacionAdmin } from './Pages/administrador/subirFacturaColacion';
+import { SubirFacturaTrasladoAdmin } from './Pages/administrador/subirFacturaTraslado';
+import { DetalleColacionAdmin } from './Pages/administrador/detalleColacion';
+import { DetalleTrasladoAdmin } from './Pages/administrador/detalleTraslado';
+
+// Director
+import { FirmarCotizacionColacionDirector } from './Pages/director/firmarCotizacionColacion';
+import { FirmarCotizacionTrasladoDirector } from './Pages/director/firmarCotizacionTraslado';
+import { FirmarFacturaDirector } from './Pages/director/firmarFactura';
+import { DetalleCotizacionDirector } from './Pages/director/detalleCotizacion';
+
+// Funcionario
+import { SubirFacturaFuncionario } from './Pages/funcionario/subirFactura';
+import { DetalleCotizacionFuncionario } from './Pages/funcionario/detalleCotizacion';
 
 function App() {
   return (
@@ -61,7 +78,7 @@ function App() {
       />
 
       <Route
-          path="/funcionario/solicitud/:id"
+          path="/funcionario/solicitudes"
           element={
               <PrivateRoute allowedRoles={["funcionario"]}>
                 <VerSolicitudesF />
@@ -129,41 +146,55 @@ function App() {
       />
 
       <Route
+        path="/administrador/revisar-solicitud/:id"
+        element={
+          <PrivateRoute allowedRoles={["administrador"]}>
+            <RevisarSolicitud />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Nuevas rutas para administrador por ítem */}
+      <Route
+        path="/administrador/subir-factura-colacion/:id"
+        element={
+          <PrivateRoute allowedRoles={["administrador"]}>
+            <SubirFacturaColacionAdmin />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/administrador/subir-factura-traslado/:id"
+        element={
+          <PrivateRoute allowedRoles={["administrador"]}>
+            <SubirFacturaTrasladoAdmin />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/administrador/detalle-colacion/:id"
+        element={
+          <PrivateRoute allowedRoles={["administrador"]}>
+            <DetalleColacionAdmin />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/administrador/detalle-traslado/:id"
+        element={
+          <PrivateRoute allowedRoles={["administrador"]}>
+            <DetalleTrasladoAdmin />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
         path="/presupuestos"
         element={
           <PrivateRoute allowedRoles={["funcionario", "administrador"]}>
-            <Presupuestos />
-          </PrivateRoute>
-        }
-      />
-        <Route
-        path="/subdireccion/dashboard"
-        element={
-          <PrivateRoute allowedRoles={["subdirector"]}>
-            <DashboardSubdirector />
-          </PrivateRoute>
-        }
-      />
-        <Route
-        path="/subdireccion/solicitudes"
-        element={
-          <PrivateRoute allowedRoles={["subdirector"]}>
-            <VerSolicitudesS />
-          </PrivateRoute>
-        }
-      />
-        <Route
-        path="/subdireccion/solicitudes/:id"
-        element={
-          <PrivateRoute allowedRoles={["subdirector"]}>
-            <DetalleSolicitudS />
-          </PrivateRoute>
-        }
-      />
-        <Route
-        path="/subdireccion/presupuestos"
-        element={
-          <PrivateRoute allowedRoles={["subdirector"]}>
             <Presupuestos />
           </PrivateRoute>
         }
@@ -190,7 +221,81 @@ function App() {
         path="/director/solicitudes/:id"
         element={
           <PrivateRoute allowedRoles={["director"]}>
-            <DetalleCotizacion />
+            <DetalleSolicitudD />
+          </PrivateRoute>
+        }
+      />
+
+    <Route
+        path="/director/firmar-cotizacion/:id"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <FirmarCotizacion />
+          </PrivateRoute>
+        }
+      />
+
+    {/* Nuevas rutas para director por ítem */}
+    <Route
+        path="/director/firmar-cotizacion-colacion/:id"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <FirmarCotizacionColacionDirector />
+          </PrivateRoute>
+        }
+      />
+
+    <Route
+        path="/director/firmar-cotizacion-traslado/:id"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <FirmarCotizacionTrasladoDirector />
+          </PrivateRoute>
+        }
+      />
+
+    <Route
+        path="/director/firmar-factura/:id"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <FirmarFacturaDirector />
+          </PrivateRoute>
+        }
+      />
+
+    <Route
+        path="/director/detalle-cotizacion/:id"
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <DetalleCotizacionDirector />
+          </PrivateRoute>
+        }
+      />
+
+    <Route
+        path="/funcionario/solicitudes/:id"
+        element={
+          <PrivateRoute allowedRoles={["funcionario"]}>
+            <DetalleSolicitudF />
+          </PrivateRoute>
+        }
+      />
+
+    {/* Nuevas rutas para funcionario por ítem */}
+    <Route
+        path="/funcionario/subir-factura/:id"
+        element={
+          <PrivateRoute allowedRoles={["funcionario"]}>
+            <SubirFacturaFuncionario />
+          </PrivateRoute>
+        }
+      />
+
+    <Route
+        path="/funcionario/detalle-cotizacion/:id"
+        element={
+          <PrivateRoute allowedRoles={["funcionario"]}>
+            <DetalleCotizacionFuncionario />
           </PrivateRoute>
         }
       />

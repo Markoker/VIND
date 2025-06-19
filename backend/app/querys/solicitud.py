@@ -1,4 +1,5 @@
 from .utils import *
+from .utils import registrar_historial_estado_item
 #from .cotizacion import actualizar_estado_item
 
 estados_dict_str = {
@@ -74,15 +75,23 @@ def GetAllEmplazamiento(emplazamientos_id=None):
 
     cur = conn.cursor()
     query = """
-            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.id_emplazamiento, e.nombre
+            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, 
+                   ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.id_emplazamiento, e.nombre,
+                   c.traslado_id, c.colacion_id,
+                   t.estado as estado_traslado,
+                   col.estado as estado_colacion
             FROM Solicitud s
             INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
             INNER JOIN Asignatura a ON a.id_asignatura = sa.asignatura_id
             INNER JOIN Visita v ON s.visita_id = v.id_visita
             INNER JOIN UnidadAcademica u ON a.departamento_id = u.id_unidad_academica
             INNER JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            LEFT JOIN Traslado t ON c.traslado_id = t.id
+            LEFT JOIN Colacion col ON c.colacion_id = col.id
             WHERE e.id_emplazamiento = ANY(%s)
-            GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.id_emplazamiento
+            GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.id_emplazamiento, e.nombre,
+                     c.traslado_id, c.colacion_id, t.estado, col.estado
             ORDER BY s.fecha DESC;
         """
     cur.execute(query, (emplazamientos_id,))
@@ -105,7 +114,9 @@ def GetAllEmplazamiento(emplazamientos_id=None):
             "asignatura": row[4],
             "visita": row[5],
             "emplazamiento_id": row[6],
-            "emplazamiento": row[7]
+            "emplazamiento": row[7],
+            "estado_traslado": row[10] if row[10] else "No aplica",
+            "estado_colacion": row[11] if row[11] else "No aplica"
         }
         for row in rows
     ]
@@ -119,15 +130,22 @@ def getPorEmplazamiento(emplazamiento_id):
 
     # Emplazamientos_id es una lista de ids, obten todas las solicitudes que tengan al menos una asignatura en alguno de los emplazamientos
     query = """
-            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.nombre
+            SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar, e.nombre,
+                   c.traslado_id, c.colacion_id,
+                   t.estado as estado_traslado,
+                   col.estado as estado_colacion
             FROM Solicitud s
             INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
             INNER JOIN Asignatura a ON a.id_asignatura = sa.asignatura_id
             INNER JOIN Visita v ON s.visita_id = v.id_visita
             INNER JOIN UnidadAcademica u ON a.departamento_id = u.id_unidad_academica
             INNER JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
+            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+            LEFT JOIN Traslado t ON c.traslado_id = t.id
+            LEFT JOIN Colacion col ON c.colacion_id = col.id
             WHERE a.departamento_id = ANY(SELECT departamento_id FROM Emplazamiento WHERE id_emplazamiento = ANY(%s))
-            GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre
+            GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre,
+                     c.traslado_id, c.colacion_id, t.estado, col.estado
             ORDER BY s.fecha DESC;
         """
     cur.execute(query, (emplazamiento_id,))
@@ -145,7 +163,9 @@ def getPorEmplazamiento(emplazamiento_id):
             "descripcion": row[3],
             "asignatura": row[4],
             "visita": row[5],
-            "emplazamiento": row[6]
+            "emplazamiento": row[6],
+            "estado_traslado": row[9] if row[9] else "No aplica",
+            "estado_colacion": row[10] if row[10] else "No aplica"
         }
         for row in rows
     ]
@@ -160,23 +180,36 @@ def GetPorUnidad(usuario_rut=None, unidad_academica_id=None, query_from="funcion
     if query_from == "funcionario":
         if not unidad_academica_id:
             query = """
-                SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar
+                SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar,
+                       c.traslado_id, c.colacion_id,
+                       t.estado as estado_traslado,
+                       col.estado as estado_colacion
                 FROM Solicitud s
                 INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
                 INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
                 INNER JOIN Visita v ON s.visita_id = v.id_visita
+                LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                LEFT JOIN Traslado t ON c.traslado_id = t.id
+                LEFT JOIN Colacion col ON c.colacion_id = col.id
                 WHERE s.usuario_rut = %s
-                GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar
+                GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar,
+                         c.traslado_id, c.colacion_id, t.estado, col.estado
                 ORDER BY s.fecha DESC;
             """
             cur.execute(query, (usuario_rut,))
         else:
             query = """
-                        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar
+                        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar,
+                               c.traslado_id, c.colacion_id,
+                               t.estado as estado_traslado,
+                               col.estado as estado_colacion
                         FROM Solicitud s
                         INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
                         INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
                         INNER JOIN Visita v ON s.visita_id = v.id_visita
+                        LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                        LEFT JOIN Traslado t ON c.traslado_id = t.id
+                        LEFT JOIN Colacion col ON c.colacion_id = col.id
                         WHERE s.usuario_rut = %s AND s.id_solicitud IN (
                             SELECT s.id_solicitud
                             FROM Solicitud s
@@ -184,30 +217,44 @@ def GetPorUnidad(usuario_rut=None, unidad_academica_id=None, query_from="funcion
                             INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
                             WHERE a.departamento_id = %s
                         )
-                        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar
+                        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar,
+                                 c.traslado_id, c.colacion_id, t.estado, col.estado
                         ORDER BY s.fecha DESC;
                     """
             cur.execute(query, (usuario_rut, unidad_academica_id))
     elif query_from == "subdireccion":
         if not unidad_academica_id:
             query = """
-                SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar
+                SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar,
+                       c.traslado_id, c.colacion_id,
+                       t.estado as estado_traslado,
+                       col.estado as estado_colacion
                 FROM Solicitud s
                 INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
                 INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
                 INNER JOIN Visita v ON s.visita_id = v.id_visita
+                LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                LEFT JOIN Traslado t ON c.traslado_id = t.id
+                LEFT JOIN Colacion col ON c.colacion_id = col.id
                 WHERE s.usuario_rut = %s
-                GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar
+                GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar,
+                         c.traslado_id, c.colacion_id, t.estado, col.estado
                 ORDER BY s.fecha DESC;
             """
             cur.execute(query, (usuario_rut,))
         else:
             query = """
-                        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar
+                        SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion, ARRAY_AGG(a.sigla) AS asignatura, v.lugar,
+                               c.traslado_id, c.colacion_id,
+                               t.estado as estado_traslado,
+                               col.estado as estado_colacion
                         FROM Solicitud s
                         INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
                         INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
                         INNER JOIN Visita v ON s.visita_id = v.id_visita
+                        LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                        LEFT JOIN Traslado t ON c.traslado_id = t.id
+                        LEFT JOIN Colacion col ON c.colacion_id = col.id
                         WHERE s.usuario_rut = %s AND s.id_solicitud IN (
                             SELECT s.id_solicitud
                             FROM Solicitud s
@@ -215,7 +262,8 @@ def GetPorUnidad(usuario_rut=None, unidad_academica_id=None, query_from="funcion
                             INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
                             WHERE a.departamento_id = %s
                         )
-                        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar
+                        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar,
+                                 c.traslado_id, c.colacion_id, t.estado, col.estado
                         ORDER BY s.fecha DESC;
                     """
             cur.execute(query, (usuario_rut, unidad_academica_id))
@@ -231,7 +279,9 @@ def GetPorUnidad(usuario_rut=None, unidad_academica_id=None, query_from="funcion
             "estado": row[2],
             "descripcion": row[3],
             "asignatura": row[4],
-            "visita": row[5]
+            "visita": row[5],
+            "estado_traslado": row[8] if row[8] else "No aplica",
+            "estado_colacion": row[9] if row[9] else "No aplica"
         }
         for row in rows
     ]
@@ -262,17 +312,24 @@ def GetPorUnidadYEmplazamiento(usuario_rut, unidad_academica_id, emplazamiento_i
         SELECT s.id_solicitud, s.fecha, s.estado, s.descripcion,
                ARRAY_AGG(DISTINCT a.sigla) AS asignatura,
                v.lugar,
-               e.nombre
+               e.nombre,
+               c.traslado_id, c.colacion_id,
+               t.estado as estado_traslado,
+               col.estado as estado_colacion
         FROM Solicitud s
         INNER JOIN AsignaturaSolicitud sa ON s.id_solicitud = sa.solicitud_id
         INNER JOIN Asignatura a ON sa.asignatura_id = a.id_asignatura
         INNER JOIN UnidadAcademica u ON a.departamento_id = u.id_unidad_academica
         INNER JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
         INNER JOIN Visita v ON s.visita_id = v.id_visita
+        LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+        LEFT JOIN Traslado t ON c.traslado_id = t.id
+        LEFT JOIN Colacion col ON c.colacion_id = col.id
         WHERE s.usuario_rut = %s
           AND u.id_unidad_academica = %s
           AND e.id_emplazamiento = %s
-        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre
+        GROUP BY s.id_solicitud, s.fecha, s.estado, s.descripcion, v.lugar, e.nombre,
+                 c.traslado_id, c.colacion_id, t.estado, col.estado
         ORDER BY s.fecha DESC
     """
 
@@ -290,7 +347,9 @@ def GetPorUnidadYEmplazamiento(usuario_rut, unidad_academica_id, emplazamiento_i
             "descripcion": row[3],
             "asignatura": row[4],
             "visita": row[5],
-            "emplazamiento": row[6]
+            "emplazamiento": row[6],
+            "estado_traslado": row[9] if row[9] else "No aplica",
+            "estado_colacion": row[10] if row[10] else "No aplica"
         }
         for row in rows
     ]
@@ -549,7 +608,7 @@ def get_historial_item(item_id, tipo_item):
     conn.close()
     return historial
 
-def actualizar_estado_solicitud(solicitud_id):
+def actualizar_estado_solicitud(solicitud_id, usuario_rut):
     """
     Actualiza el estado de la solicitud basado en los estados de colación y traslado
     
@@ -568,7 +627,7 @@ def actualizar_estado_solicitud(solicitud_id):
     try:
         # Obtener estados actuales
         query = """
-            SELECT c.estado as estado_colacion, t.estado as estado_traslado
+            SELECT col.estado as estado_colacion, t.estado as estado_traslado
             FROM Solicitud s
             LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
             LEFT JOIN Colacion col ON c.colacion_id = col.id
@@ -587,32 +646,131 @@ def actualizar_estado_solicitud(solicitud_id):
         
         # Determinar estado de la solicitud
         nuevo_estado = 0  # Por defecto rechazada
+
+        num_estados = {
+            "rechazado": 0,
+            "en_revision": 2,
+            "pendiente_firma": 3,
+            "esperando_factura": 4,
+            "esperando_firma_factura": 5,
+            "pagada": 6
+        }
         
         if estado_colacion is not None and estado_traslado is not None:
             # Si ambos están aprobados, la solicitud está aprobada
-            if estado_colacion == 1 and estado_traslado == 1:
-                nuevo_estado = 6  # Aprobada
+            if estado_colacion == "rechazado" or estado_traslado == "rechazado":
+                nuevo_estado = 0  # Aprobada
             # Si alguno está pendiente, la solicitud está en revisión
-            elif estado_colacion == 0 or estado_traslado == 0:
+            elif estado_colacion in ["en_revision", "pendiente_revision"] or estado_traslado in ["en_revision", "pendiente_revision"]:
+                nuevo_estado = 2
+            elif estado_colacion == "pendiente_firma" or estado_traslado == "pendiente_firma":
                 nuevo_estado = 3  # Revisión presupuesto
-            # Si alguno está rechazado, la solicitud está rechazada
-            elif estado_colacion == 2 or estado_traslado == 2:
-                nuevo_estado = 0  # Rechazada
+            elif estado_colacion == "esperando_factura" or estado_traslado == "esperando_factura":
+                nuevo_estado = 4  # Revisión presupuesto
+            elif estado_colacion == "esperando_firma_factura" or estado_traslado == "esperando_firma_factura":
+                nuevo_estado = 5  # Revisión presupuesto
+            else:
+                nuevo_estado = 6  # Aprobada
+        elif estado_colacion is not None:
+            nuevo_estado = num_estados[estado_colacion]
+        elif estado_traslado is not None:
+            nuevo_estado = num_estados[estado_traslado]
                 
-        # Actualizar estado de la solicitud
-        query_update = """
-            UPDATE Solicitud
-            SET estado = %s
-            WHERE id_solicitud = %s
-        """
+        CambiarEstado(usuario_rut, solicitud_id, nuevo_estado)
         
-        cur.execute(query_update, (nuevo_estado, solicitud_id))
         conn.commit()
         return True
         
     except Exception as e:
         conn.rollback()
         print(f"Error al actualizar estado de solicitud: {str(e)}")
+        return False
+        
+    finally:
+        cur.close()
+        conn.close()
+
+def CambiarEstado(usuario_rut, solicitud_id, nuevo_estado, comentario=None):
+    """
+    Cambia el estado de una solicitud y registra el cambio
+    
+    Args:
+        usuario_rut (str): RUT del usuario que realiza el cambio
+        solicitud_id (int): ID de la solicitud
+        nuevo_estado (int): Nuevo estado a asignar
+        comentario (str, optional): Comentario del cambio
+    
+    Returns:
+        bool: True si el cambio fue exitoso, False en caso contrario
+    """
+    conn = get_connection()
+    if conn is None:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+
+    cur = conn.cursor()
+    
+    try:
+        # Obtener estado anterior
+        cur.execute("SELECT estado FROM Solicitud WHERE id_solicitud = %s", (solicitud_id,))
+        result = cur.fetchone()
+        if not result:
+            raise Exception(f"No se encontró la solicitud {solicitud_id}")
+        
+        estado_anterior = result[0]
+        
+        # Actualizar estado de la solicitud
+        cur.execute(
+            "UPDATE Solicitud SET estado = %s WHERE id_solicitud = %s",
+            (nuevo_estado, solicitud_id)
+        )
+        
+        # Si el nuevo estado es 3 (pendiente firma), cambiar estados de ítems a pendiente_firma
+        if nuevo_estado == 3:
+            # Obtener IDs de colación y traslado
+            cur.execute("""
+                SELECT c.colacion_id, c.traslado_id
+                FROM Solicitud s
+                LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                WHERE s.id_solicitud = %s
+            """, (solicitud_id,))
+            
+            result = cur.fetchone()
+            if result:
+                colacion_id = result[0]
+                traslado_id = result[1]
+                
+                # Actualizar estado de colación si existe
+                if colacion_id:
+                    cur.execute(
+                        "UPDATE Colacion SET estado = %s WHERE id = %s",
+                        ("pendiente_firma", colacion_id)
+                    )
+                    # Registrar en historial
+                    registrar_historial_estado_item(
+                        solicitud_id, "colacion", colacion_id, 
+                        "en_revision", "pendiente_firma", usuario_rut, 
+                        "Aprobación de requisitos por administrador"
+                    )
+                
+                # Actualizar estado de traslado si existe
+                if traslado_id:
+                    cur.execute(
+                        "UPDATE Traslado SET estado = %s WHERE id = %s",
+                        ("pendiente_firma", traslado_id)
+                    )
+                    # Registrar en historial
+                    registrar_historial_estado_item(
+                        solicitud_id, "traslado", traslado_id, 
+                        "en_revision", "pendiente_firma", usuario_rut, 
+                        "Aprobación de requisitos por administrador"
+                    )
+        
+        conn.commit()
+        return True
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al cambiar estado de solicitud: {str(e)}")
         return False
         
     finally:

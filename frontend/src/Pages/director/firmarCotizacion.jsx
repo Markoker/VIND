@@ -2,12 +2,48 @@ import {useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import axios from "axios";
 
-export function DetalleSolicitudI() {
+export function FirmarCotizacion() {
     const {id} = useParams();
     const [detalle, setDetalle] = useState(null);
     const [error, setError] = useState("");
+    const [comentarioRechazo, setComentarioRechazo] = useState("");
+    const [mostrarComentario, setMostrarComentario] = useState(false);
     const navigate = useNavigate();
     const rut = localStorage.getItem("userRut");
+
+    const aprobarCotizacion = async () => {
+        try {
+            await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/aprobar-cotizacion`);
+            setDetalle({...detalle, estado: 4});
+            alert("Cotización aprobada exitosamente");
+        } catch (err) {
+            alert("No se pudo aprobar la cotización.");
+        }
+    };
+
+    const rechazarCotizacion = () => {
+        setMostrarComentario(true);
+    };
+
+    const confirmarRechazo = async () => {
+        if (comentarioRechazo.trim() === "") {
+            alert("Debe ingresar un comentario para rechazar.");
+            return;
+        }
+
+        try {
+            await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/rechazar-cotizacion`, null, {
+                params: {comentario: comentarioRechazo}
+            });
+            setDetalle({...detalle, estado: 2});
+            setMostrarComentario(false);
+            setComentarioRechazo("");
+            alert("Cotización rechazada exitosamente");
+        } catch (err) {
+            console.log(err);
+            alert("No se pudo rechazar la cotización.");
+        }
+    };
 
     useEffect(() => {
         const fetchDetalle = async () => {
@@ -45,7 +81,7 @@ export function DetalleSolicitudI() {
 
     return (
         <div style={{padding: "20px"}}>
-            <h1>Detalle de Solicitud #{detalle.id}</h1>
+            <h1>Firmar Cotización - Solicitud #{detalle.id}</h1>
             
             <div style={{marginBottom: "20px"}}>
                 <h3>Información General</h3>
@@ -80,7 +116,7 @@ export function DetalleSolicitudI() {
 
             {detalle.cotizacion && (
                 <div style={{marginBottom: "20px"}}>
-                    <h3>Cotización</h3>
+                    <h3>Cotización para Firmar</h3>
                     <div style={{display: "flex", gap: "30px"}}>
                         <p><strong>Tipo:</strong> {detalle.cotizacion.tipo}</p>
                         <p><strong>Estado:</strong> {detalle.cotizacion.estado}</p>
@@ -146,8 +182,40 @@ export function DetalleSolicitudI() {
                 </div>
             )}
 
+            {/* Solo mostrar botones de acción si el estado permite al director actuar */}
+            {detalle.estado === 3 && (
+                <>
+                    <div style={{display: "flex", gap: "10px", marginTop: "20px"}}>
+                        <button onClick={aprobarCotizacion} style={{backgroundColor: "green", color: "white", padding: "10px 20px"}}>
+                            Firmar Cotización
+                        </button>
+                        <button onClick={rechazarCotizacion} style={{backgroundColor: "red", color: "white", padding: "10px 20px"}}>
+                            Rechazar Cotización
+                        </button>
+                    </div>
+
+                    {mostrarComentario && (
+                        <div style={{marginTop: "10px"}}>
+                            <label htmlFor="comentario"><strong>Motivo del rechazo:</strong></label><br/>
+                            <textarea
+                                id="comentario"
+                                rows="4"
+                                cols="50"
+                                value={comentarioRechazo}
+                                onChange={(e) => setComentarioRechazo(e.target.value)}
+                                style={{marginTop: "5px", width: "100%", maxWidth: "400px"}}
+                            />
+                            <br/>
+                            <button onClick={confirmarRechazo} style={{backgroundColor: "red", color: "white", padding: "10px 20px", marginTop: "10px"}}>
+                                Confirmar rechazo
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
+
             <br/>
-            <button onClick={() => navigate("/administrador/solicitudes")}>Volver</button>
+            <button onClick={() => navigate("/director/solicitudes")}>Volver</button>
         </div>
     );
-}
+} 

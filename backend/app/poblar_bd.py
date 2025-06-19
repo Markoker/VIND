@@ -358,8 +358,8 @@ def generar_solicitud(rut_usuario=None, estado=2):
 
 # Ejecutar los generadores de datos
 if __name__ == "__main__":
-    #borrar_datos()
-    #reiniciar_secuencias()
+    borrar_datos()
+    reiniciar_secuencias()
 
     cargar_datos_universidad('DATA.xlsx')
     generar_usuarios()
@@ -388,9 +388,8 @@ if __name__ == "__main__":
     conn.commit()
 
     # Generar solicitudes de prueba
-    for i in range(2, 6):
-        for _ in range(15):
-            generar_solicitud("99999999-9", estado=i)
+    for _ in range(20):
+        generar_solicitud("99999999-9", estado=2)
 
     # Confirmar los cambios
     conn.commit()

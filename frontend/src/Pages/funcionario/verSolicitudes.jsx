@@ -38,6 +38,7 @@ export function VerSolicitudesF({ rut }) {
                     : `http://localhost:8000/solicitudes/funcionario/${rut}`;
                 const response = await axios.get(url);
                 setSolicitudes(response.data);
+                console.log(response.data);
             } catch (err) {
                 setError(
                     err.response?.data?.detail || "Error al obtener las solicitudes."
@@ -47,6 +48,26 @@ export function VerSolicitudesF({ rut }) {
 
         fetchSolicitudes();
     }, [rut, unidadAcademicaId]);
+
+    const estados = {
+        0: "Rechazada",
+        1: "En revisión",
+        2: "Revisión de requisitos",
+        3: "Esperando firma de cotización",
+        4: "Esperando factura",
+        5: "Esperando firma de factura",
+        6: "Pagada"
+    };
+
+    const estadosItem = {
+        "pendiente_revision": "Pendiente de revisión",
+        "pagada": "Pagada",
+        "rechazado": "Rechazado",
+        "en_revision": "En revisión",
+        "pendiente_firma": "Pendiente de firma",
+        "esperando_factura": "Esperando factura",
+        "esperando_firma_factura": "Esperando firma de factura"
+    };
 
     return (
         <div>
@@ -75,9 +96,14 @@ export function VerSolicitudesF({ rut }) {
                     <th>ID</th>
                     <th>Fecha</th>
                     <th>Estado</th>
+                    <th>Estado Colación</th>
+                    <th>Colación</th>
+                    <th>Estado Traslado</th>
+                    <th>Traslado</th>
                     <th>Descripción</th>
                     <th>Asignatura</th>
                     <th>Visita</th>
+                    <th>Acciones</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -85,16 +111,67 @@ export function VerSolicitudesF({ rut }) {
                     <tr key={solicitud.id_solicitud}>
                         <td>{solicitud.id_solicitud}</td>
                         <td>{new Date(solicitud.fecha).toLocaleDateString()}</td>
-                        <td>{solicitud.estado}</td>
+                        <td>{estados[Number(solicitud.estado)] || "Desconocido"}</td>
+                        <td>{solicitud.estado_colacion ? estadosItem[solicitud.estado_colacion] || solicitud.estado_colacion : "No aplica"}</td>
+                        <td>
+                            {solicitud.estado_colacion && solicitud.estado_colacion !== "No aplica" && (
+                                <button 
+                                    onClick={() => {
+                                        // Estado pendiente_firma: funcionario puede subir factura
+                                        if (solicitud.estado_colacion === "esperando_factura") {
+                                            navigate(`/funcionario/subir-factura-colacion/${solicitud.id_solicitud}`);
+                                        }
+                                        // Otros estados: solo visualización
+                                        else {
+                                            navigate(`/funcionario/detalle-colacion/${solicitud.id_solicitud}`);
+                                        }
+                                    }}
+                                    style={{backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer"}}
+                                >
+                                    {solicitud.estado_colacion === "esperando_factura" ? "Subir Factura" : "Ver Colación"}
+                                </button>
+                            )}
+                        </td>
+                        
+                        <td>{solicitud.estado_traslado ? estadosItem[solicitud.estado_traslado] || solicitud.estado_traslado : "No aplica"}</td>
+                        
+                        <td>
+                            {solicitud.estado_traslado && solicitud.estado_traslado !== "No aplica" && (
+                                <button 
+                                    onClick={() => {
+                                        // Estado pendiente_firma: funcionario puede subir factura
+                                        if (solicitud.estado_traslado === "esperando_factura") {
+                                            navigate(`/funcionario/subir-factura-traslado/${solicitud.id_solicitud}`);
+                                        }
+                                        // Otros estados: solo visualización
+                                        else {
+                                            navigate(`/funcionario/detalle-traslado/${solicitud.id_solicitud}`);
+                                        }
+                                    }}
+                                    style={{backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer"}}
+                                >
+                                    {solicitud.estado_traslado === "esperando_factura" ? "Subir Factura" : "Ver Traslado"}
+                                </button>
+                            )}
+                        </td>
                         <td>{solicitud.descripcion}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>
                         <td>{solicitud.visita}</td>
-                        <td><a href={`/funcionario/solicitudes/${solicitud.id_solicitud}`}>Ver</a></td>
+                        <td>
+                            <button 
+                                onClick={() => {
+                                    navigate(`/funcionario/solicitudes/${solicitud.id_solicitud}`);
+                                }}
+                                style={{backgroundColor: "blue", color: "white", padding: "5px 10px", border: "none", cursor: "pointer"}}
+                            >
+                                Ver
+                            </button>
+                        </td>
                     </tr>
                 ))}
                 </tbody>
             </table>
-            <button className="volver-btn" onClick={() => navigate(-1)}>Volver</button>
+            <button className="volver-btn" onClick={() => navigate("/funcionario/dashboard")}>Volver</button>
         </div>
     );
 }

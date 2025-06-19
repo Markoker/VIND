@@ -59,6 +59,15 @@ export function SolicitudI({ rut }) {
         "6": "Aprobada"
     };
 
+    const estadosItem = {
+        "pendiente_revision": "Pendiente de revisión",
+        "aprobado": "Aprobado",
+        "rechazado": "Rechazado",
+        "en_revision": "En revisión",
+        "pendiente_firma": "Pendiente de firma",
+        "orden_compra": "Orden de compra enviada"
+    };
+
     return (
         <div>
             <h1>Solicitudes</h1>
@@ -86,10 +95,13 @@ export function SolicitudI({ rut }) {
                     <th>ID</th>
                     <th>Fecha</th>
                     <th>Estado</th>
+                    <th>Estado Colación</th>
+                    <th>Estado Traslado</th>
                     <th>Descripción</th>
                     <th>Emplazamiento</th>
                     <th>Asignatura</th>
                     <th>Visita</th>
+                    <th>Acciones</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -98,6 +110,8 @@ export function SolicitudI({ rut }) {
                         <td>{solicitud.id_solicitud}</td>
                         <td>{new Date(solicitud.fecha).toLocaleDateString()}</td>
                         <td>{estados[String(solicitud.estado)] || "Desconocido"}</td>
+                        <td>{solicitud.estado_colacion ? estadosItem[solicitud.estado_colacion] || solicitud.estado_colacion : "No aplica"}</td>
+                        <td>{solicitud.estado_traslado ? estadosItem[solicitud.estado_traslado] || solicitud.estado_traslado : "No aplica"}</td>
                         <td>{solicitud.descripcion}</td>
                         <td>{solicitud.emplazamiento}</td>
                         <td>{solicitud.asignatura.join(" - ")}</td>

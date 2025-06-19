@@ -2,12 +2,48 @@ import {useParams, useNavigate} from "react-router-dom";
 import {useEffect, useState} from "react";
 import axios from "axios";
 
-export function DetalleSolicitudI() {
+export function RevisarSolicitud() {
     const {id} = useParams();
     const [detalle, setDetalle] = useState(null);
     const [error, setError] = useState("");
+    const [comentarioRechazo, setComentarioRechazo] = useState("");
+    const [mostrarComentario, setMostrarComentario] = useState(false);
     const navigate = useNavigate();
     const rut = localStorage.getItem("userRut");
+
+    const aprobarSolicitud = async () => {
+        try {
+            await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/aprobar-requisitos`);
+            setDetalle({...detalle, estado: 3});
+            alert("Solicitud aprobada exitosamente");
+        } catch (err) {
+            alert("No se pudo aprobar la solicitud.");
+        }
+    };
+
+    const rechazarSolicitud = () => {
+        setMostrarComentario(true);
+    };
+
+    const confirmarRechazo = async () => {
+        if (comentarioRechazo.trim() === "") {
+            alert("Debe ingresar un comentario para rechazar.");
+            return;
+        }
+
+        try {
+            await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/rechazar`, null, {
+                params: {comentario: comentarioRechazo}
+            });
+            setDetalle({...detalle, estado: 0});
+            setMostrarComentario(false);
+            setComentarioRechazo("");
+            alert("Solicitud rechazada exitosamente");
+        } catch (err) {
+            console.log(err);
+            alert("No se pudo rechazar la solicitud.");
+        }
+    };
 
     useEffect(() => {
         const fetchDetalle = async () => {
@@ -28,24 +64,25 @@ export function DetalleSolicitudI() {
         0: "Rechazada",
         1: "En revisión",
         2: "Revisión de requisitos",
-        3: "Autorización de presupuesto",
-        4: "Firma de cotización",
-        5: "Orden de compra",
-        6: "Aprobada"
+        3: "Esperando firma de cotización",
+        4: "Esperando factura",
+        5: "Esperando firma de factura",
+        6: "Pagada"
     };
 
     const estadosItem = {
         "pendiente_revision": "Pendiente de revisión",
-        "aprobado": "Aprobado",
+        "pagada": "Pagada",
         "rechazado": "Rechazado",
         "en_revision": "En revisión",
         "pendiente_firma": "Pendiente de firma",
-        "orden_compra": "Orden de compra enviada"
+        "esperando_factura": "Esperando factura",
+        "esperando_firma_factura": "Esperando firma de factura"
     };
 
     return (
         <div style={{padding: "20px"}}>
-            <h1>Detalle de Solicitud #{detalle.id}</h1>
+            <h1>Revisar Solicitud #{detalle.id}</h1>
             
             <div style={{marginBottom: "20px"}}>
                 <h3>Información General</h3>
@@ -146,8 +183,40 @@ export function DetalleSolicitudI() {
                 </div>
             )}
 
+            {/* Solo mostrar botones de acción si el estado permite al administrador actuar */}
+            {(detalle.estado === 2 || detalle.estado === 1) && (
+                <>
+                    <div style={{display: "flex", gap: "10px", marginTop: "20px"}}>
+                        <button onClick={aprobarSolicitud} style={{backgroundColor: "green", color: "white", padding: "10px 20px"}}>
+                            Aprobar Solicitud
+                        </button>
+                        <button onClick={rechazarSolicitud} style={{backgroundColor: "red", color: "white", padding: "10px 20px"}}>
+                            Rechazar Solicitud
+                        </button>
+                    </div>
+
+                    {mostrarComentario && (
+                        <div style={{marginTop: "10px"}}>
+                            <label htmlFor="comentario"><strong>Motivo del rechazo:</strong></label><br/>
+                            <textarea
+                                id="comentario"
+                                rows="4"
+                                cols="50"
+                                value={comentarioRechazo}
+                                onChange={(e) => setComentarioRechazo(e.target.value)}
+                                style={{marginTop: "5px", width: "100%", maxWidth: "400px"}}
+                            />
+                            <br/>
+                            <button onClick={confirmarRechazo} style={{backgroundColor: "red", color: "white", padding: "10px 20px", marginTop: "10px"}}>
+                                Confirmar rechazo
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
+
             <br/>
             <button onClick={() => navigate("/administrador/solicitudes")}>Volver</button>
         </div>
     );
-}
+} 
