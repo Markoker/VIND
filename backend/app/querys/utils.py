@@ -21,11 +21,14 @@ def get_connection():
 
 
 # Funciones para registrar y consultar historial de estado de ítems (colacion/traslado)
-def registrar_historial_estado_item(solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_decision_rut, comentario=None):
-    conn = get_connection()
-    if conn is None:
-        raise ConnectionError("No se pudo conectar a la base de datos")
-    cur = conn.cursor()
+def registrar_historial_estado_item(solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_decision_rut, comentario=None, conn=None, cur=None):
+    close_conn = False
+    if conn is None or cur is None:
+        conn = get_connection()
+        if conn is None:
+            raise ConnectionError("No se pudo conectar a la base de datos")
+        cur = conn.cursor()
+        close_conn = True
     cur.execute(
         """
         INSERT INTO HistorialEstadoItem (solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_decision_rut, comentario)
@@ -33,9 +36,10 @@ def registrar_historial_estado_item(solicitud_id, item_tipo, item_id, estado_ant
         """,
         (solicitud_id, item_tipo, item_id, estado_anterior, estado_nuevo, usuario_decision_rut, comentario)
     )
-    conn.commit()
-    cur.close()
-    conn.close()
+    if close_conn:
+        conn.commit()
+        cur.close()
+        conn.close()
 
 def obtener_historial_item(item_tipo, item_id):
     conn = get_connection()

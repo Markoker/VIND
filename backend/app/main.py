@@ -19,6 +19,8 @@ import querys.asignatura as Asignatura
 import querys.presupuesto as Presupuesto
 from querys.cotizacion import actualizar_estado_item
 from querys.utils import obtener_historial_item
+from querys.utils import registrar_historial_estado_item
+from querys.solicitud import actualizar_estado_solicitud
 
 app = FastAPI()
 
@@ -306,40 +308,69 @@ def aprobar_requisitos_solicitud(id_solicitud: int, RUT: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@solicitud_router.post("/{id_solicitud}/{RUT}/aprobar-cotizacion-colacion-director")
-async def aprobar_cotizacion_colacion_director(id_solicitud: int, RUT: str, archivo: UploadFile = File(...)):
+@solicitud_router.post("/{id_solicitud}/{RUT}/firmar-cotizacion/{tipo_item}")
+async def firmar_cotizacion(id_solicitud: int, RUT: str, tipo_item: str, archivo: UploadFile = File(...)):
+    import os
+    from querys.utils import registrar_historial_estado_item
+    from querys.solicitud import actualizar_estado_solicitud
+    conn = get_connection()
+    if conn is None:
+        raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
+    cur = conn.cursor()
     try:
-        # Obtener el ID de colación de la solicitud
-        conn = get_connection()
-        if conn is None:
-            raise HTTPException(status_code=500, detail="No se pudo conectar a la base de datos")
-        
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT c.colacion_id
-            FROM Solicitud s
-            LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
-            WHERE s.id_solicitud = %s
-        """, (id_solicitud,))
-        
+        # 1. Obtener el ID del ítem
+        if tipo_item not in ["colacion", "traslado"]:
+            raise HTTPException(status_code=400, detail="tipo_item debe ser 'colacion' o 'traslado'")
+        if tipo_item == "colacion":
+            cur.execute("""
+                SELECT c.colacion_id
+                FROM Solicitud s
+                LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                WHERE s.id_solicitud = %s
+            """, (id_solicitud,))
+        else:
+            cur.execute("""
+                SELECT c.traslado_id
+                FROM Solicitud s
+                LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
+                WHERE s.id_solicitud = %s
+            """, (id_solicitud,))
+            
         result = cur.fetchone()
         if not result or not result[0]:
-            raise HTTPException(status_code=404, detail="No se encontró colación para esta solicitud")
+            raise HTTPException(status_code=404, detail=f"No se encontró {tipo_item} para esta solicitud")
+        item_id = result[0]
+
+        # 2. Guardar el archivo PDF
+        ruta_archivo = f"uploads/{tipo_item}/cotizacion_firmada_{item_id}.pdf"
+        os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+        with open(ruta_archivo, "wb") as f:
+            contenido = await archivo.read()
+            f.write(contenido)
+        # 3. Actualizar el estado del ítem
+        cur.execute(f"UPDATE {tipo_item.capitalize()} SET estado = %s WHERE id = %s", ("esperando_factura", item_id))
+        # 4. Commit y verificación
+        conn.commit()
+        cur.execute(f"SELECT estado FROM {tipo_item.capitalize()} WHERE id = %s", (item_id,))
+        estado = cur.fetchone()
+        if not estado or estado[0] != "esperando_factura":
+            return {"error": "Fallo en update directo", "estado": estado}
+
+        # 5. Agregar historial
+        registrar_historial_estado_item(id_solicitud, tipo_item, item_id, "pendiente_firma", "esperando_factura", RUT, "Cotización firmada por director", conn=conn, cur=cur)
+        conn.commit()
+
+        # 6. Actualizar estado de la solicitud
+        actualizar_estado_solicitud(id_solicitud, RUT, conn=conn, cur=cur)
+        conn.commit()
         
-        colacion_id = result[0]
+        return {"message": f"Cotización de {tipo_item} firmada exitosamente", "estado": estado}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
         cur.close()
         conn.close()
-        
-        # Primero guardar la cotización firmada
-        await guardar_cotizacion_firmada("colacion", colacion_id, archivo)
-        
-        # Luego cambiar el estado del ítem
-        from querys.cotizacion import actualizar_estado_item
-        actualizar_estado_item("colacion", colacion_id, id_solicitud, "esperando_factura", RUT, "Cotización firmada por director")
-        
-        return {"message": "Cotización de colación aprobada exitosamente"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 @solicitud_router.post("/{id_solicitud}/{RUT}/rechazar-cotizacion-colacion-director")
 def rechazar_cotizacion_colacion_director(id_solicitud: int, RUT: str, comentario: str):
@@ -694,6 +725,8 @@ async def guardar_cotizacion_firmada(
     with open(ruta_archivo, "wb") as f:
         f.write(archivo.file.read())
 
+    print(f"Archivo guardado en {ruta_archivo}")
+
     # Actualizar la base de datos
     conn = get_connection()
     if conn is None:
@@ -706,6 +739,7 @@ async def guardar_cotizacion_firmada(
         elif tipo == "colacion":
             cur.execute("UPDATE Colacion SET cotizacion_firmada = %s WHERE id = %s;", (ruta_archivo, id))
         conn.commit()
+        print(f"Cotización firmada guardada en {ruta_archivo}")
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Error al guardar el archivo: {str(e)}")

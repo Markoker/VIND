@@ -28,11 +28,12 @@ export function DetalleSolicitudI() {
         0: "Rechazada",
         1: "En revisión",
         2: "Revisión de requisitos",
-        3: "Autorización de presupuesto",
-        4: "Firma de cotización",
-        5: "Orden de compra",
-        6: "Aprobada"
+        3: "Esperando firma de cotización",
+        4: "Esperando factura",
+        5: "Esperando firma de factura",
+        6: "Pagada"
     };
+
 
     const estadosItem = {
         "pendiente_revision": "Pendiente de revisión",

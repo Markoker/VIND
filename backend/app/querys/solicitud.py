@@ -1,6 +1,5 @@
 from .utils import *
 from .utils import registrar_historial_estado_item
-#from .cotizacion import actualizar_estado_item
 
 estados_dict_str = {
     0: "Rechazada",
@@ -97,9 +96,6 @@ def GetAllEmplazamiento(emplazamientos_id=None):
     cur.execute(query, (emplazamientos_id,))
 
     rows = cur.fetchall()
-    for r in rows:
-        print(r)
-        print()
 
     cur.close()
     conn.close()
@@ -608,22 +604,14 @@ def get_historial_item(item_id, tipo_item):
     conn.close()
     return historial
 
-def actualizar_estado_solicitud(solicitud_id, usuario_rut):
-    """
-    Actualiza el estado de la solicitud basado en los estados de colación y traslado
-    
-    Args:
-        solicitud_id (int): ID de la solicitud
-    
-    Returns:
-        bool: True si la actualización fue exitosa, False en caso contrario
-    """
-    conn = get_connection()
-    if conn is None:
-        raise ConnectionError("No se pudo conectar a la base de datos")
-
-    cur = conn.cursor()
-    
+def actualizar_estado_solicitud(solicitud_id, usuario_rut, conn=None, cur=None):
+    close_conn = False
+    if conn is None or cur is None:
+        conn = get_connection()
+        if conn is None:
+            raise ConnectionError("No se pudo conectar a la base de datos")
+        cur = conn.cursor()
+        close_conn = True
     try:
         # Obtener estados actuales
         query = """
@@ -634,19 +622,14 @@ def actualizar_estado_solicitud(solicitud_id, usuario_rut):
             LEFT JOIN Traslado t ON c.traslado_id = t.id
             WHERE s.id_solicitud = %s
         """
-        
         cur.execute(query, (solicitud_id,))
         row = cur.fetchone()
-        
         if not row:
             raise Exception(f"No se encontró la solicitud {solicitud_id}")
-            
         estado_colacion = row[0]
         estado_traslado = row[1]
-        
         # Determinar estado de la solicitud
         nuevo_estado = 0  # Por defecto rechazada
-
         num_estados = {
             "rechazado": 0,
             "en_revision": 2,
@@ -655,125 +638,98 @@ def actualizar_estado_solicitud(solicitud_id, usuario_rut):
             "esperando_firma_factura": 5,
             "pagada": 6
         }
-        
         if estado_colacion is not None and estado_traslado is not None:
-            # Si ambos están aprobados, la solicitud está aprobada
             if estado_colacion == "rechazado" or estado_traslado == "rechazado":
-                nuevo_estado = 0  # Aprobada
-            # Si alguno está pendiente, la solicitud está en revisión
+                nuevo_estado = 0
             elif estado_colacion in ["en_revision", "pendiente_revision"] or estado_traslado in ["en_revision", "pendiente_revision"]:
                 nuevo_estado = 2
             elif estado_colacion == "pendiente_firma" or estado_traslado == "pendiente_firma":
-                nuevo_estado = 3  # Revisión presupuesto
+                nuevo_estado = 3
             elif estado_colacion == "esperando_factura" or estado_traslado == "esperando_factura":
-                nuevo_estado = 4  # Revisión presupuesto
+                nuevo_estado = 4
             elif estado_colacion == "esperando_firma_factura" or estado_traslado == "esperando_firma_factura":
-                nuevo_estado = 5  # Revisión presupuesto
+                nuevo_estado = 5
             else:
-                nuevo_estado = 6  # Aprobada
+                nuevo_estado = 6
         elif estado_colacion is not None:
             nuevo_estado = num_estados[estado_colacion]
         elif estado_traslado is not None:
             nuevo_estado = num_estados[estado_traslado]
-                
-        CambiarEstado(usuario_rut, solicitud_id, nuevo_estado)
-        
-        conn.commit()
+        CambiarEstado(usuario_rut, solicitud_id, nuevo_estado, conn=conn, cur=cur)
+        if close_conn:
+            conn.commit()
+            cur.close()
+            conn.close()
         return True
-        
     except Exception as e:
-        conn.rollback()
+        if close_conn:
+            conn.rollback()
+            cur.close()
+            conn.close()
         print(f"Error al actualizar estado de solicitud: {str(e)}")
         return False
-        
-    finally:
-        cur.close()
-        conn.close()
 
-def CambiarEstado(usuario_rut, solicitud_id, nuevo_estado, comentario=None):
-    """
-    Cambia el estado de una solicitud y registra el cambio
-    
-    Args:
-        usuario_rut (str): RUT del usuario que realiza el cambio
-        solicitud_id (int): ID de la solicitud
-        nuevo_estado (int): Nuevo estado a asignar
-        comentario (str, optional): Comentario del cambio
-    
-    Returns:
-        bool: True si el cambio fue exitoso, False en caso contrario
-    """
-    conn = get_connection()
-    if conn is None:
-        raise ConnectionError("No se pudo conectar a la base de datos")
-
-    cur = conn.cursor()
-    
+def CambiarEstado(usuario_rut, solicitud_id, nuevo_estado, comentario=None, conn=None, cur=None):
+    close_conn = False
+    if conn is None or cur is None:
+        conn = get_connection()
+        if conn is None:
+            raise ConnectionError("No se pudo conectar a la base de datos")
+        cur = conn.cursor()
+        close_conn = True
     try:
-        # Obtener estado anterior
         cur.execute("SELECT estado FROM Solicitud WHERE id_solicitud = %s", (solicitud_id,))
         result = cur.fetchone()
         if not result:
             raise Exception(f"No se encontró la solicitud {solicitud_id}")
-        
         estado_anterior = result[0]
-        
-        # Actualizar estado de la solicitud
         cur.execute(
             "UPDATE Solicitud SET estado = %s WHERE id_solicitud = %s",
             (nuevo_estado, solicitud_id)
         )
-        
-        # Si el nuevo estado es 3 (pendiente firma), cambiar estados de ítems a pendiente_firma
         if nuevo_estado == 3:
-            # Obtener IDs de colación y traslado
             cur.execute("""
                 SELECT c.colacion_id, c.traslado_id
                 FROM Solicitud s
                 LEFT JOIN Cotizacion c ON s.cotizacion_id = c.id_cotizacion
                 WHERE s.id_solicitud = %s
             """, (solicitud_id,))
-            
             result = cur.fetchone()
             if result:
                 colacion_id = result[0]
                 traslado_id = result[1]
-                
-                # Actualizar estado de colación si existe
                 if colacion_id:
                     cur.execute(
                         "UPDATE Colacion SET estado = %s WHERE id = %s",
                         ("pendiente_firma", colacion_id)
                     )
-                    # Registrar en historial
                     registrar_historial_estado_item(
                         solicitud_id, "colacion", colacion_id, 
                         "en_revision", "pendiente_firma", usuario_rut, 
-                        "Aprobación de requisitos por administrador"
+                        "Aprobación de requisitos por administrador",
+                        conn=conn, cur=cur
                     )
-                
-                # Actualizar estado de traslado si existe
                 if traslado_id:
                     cur.execute(
                         "UPDATE Traslado SET estado = %s WHERE id = %s",
                         ("pendiente_firma", traslado_id)
                     )
-                    # Registrar en historial
                     registrar_historial_estado_item(
                         solicitud_id, "traslado", traslado_id, 
                         "en_revision", "pendiente_firma", usuario_rut, 
-                        "Aprobación de requisitos por administrador"
+                        "Aprobación de requisitos por administrador",
+                        conn=conn, cur=cur
                     )
-        
-        conn.commit()
+        if close_conn:
+            conn.commit()
+            cur.close()
+            conn.close()
         return True
-        
     except Exception as e:
-        conn.rollback()
+        if close_conn:
+            conn.rollback()
+            cur.close()
+            conn.close()
         print(f"Error al cambiar estado de solicitud: {str(e)}")
         return False
-        
-    finally:
-        cur.close()
-        conn.close()
 

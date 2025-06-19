@@ -37,12 +37,11 @@ export function FirmarCotizacionColacionDirector() {
             alert("Debe subir la cotización firmada antes de aprobar.");
             return;
         }
-
         try {
             const formData = new FormData();
             formData.append('archivo', cotizacionFirmada);
-            
-            await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/aprobar-cotizacion-colacion-director`, formData, {
+            formData.append('tipo_item', 'colacion');
+            await axios.post(`http://localhost:8000/solicitudes/${id}/${rut}/firmar-cotizacion/colacion`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
