@@ -71,9 +71,8 @@ def getRolesUsuario(rut, query_type="all", rol=None):
     '''
 
     es_funcionario = False
-    es_ingeniero = False
+    es_administrador = False
     es_director = False
-    es_subdirector = False
 
     if query_type == "all":
         cur = conn.cursor()
@@ -81,32 +80,24 @@ def getRolesUsuario(rut, query_type="all", rol=None):
         print(cur.fetchone())
         es_funcionario = cur.fetchone() is not None
 
-        cur.execute("SELECT * FROM Ingeniero WHERE usuario_rut = %s;", (rut,))
-        es_ingeniero = cur.fetchone() is not None
+        cur.execute("SELECT * FROM Administrador WHERE usuario_rut = %s;", (rut,))
+        es_administrador = cur.fetchone() is not None
 
         cur.execute("SELECT * FROM Director WHERE usuario_rut = %s;", (rut,))
         es_director = cur.fetchone() is not None
-
-        cur.execute("SELECT * FROM Subdirector WHERE usuario_rut = %s;", (rut,))
-        es_subdirector = cur.fetchone() is not None
-        cur.close()
 
     elif query_type == "by_rol":
         if rol == "funcionario":
             cur = conn.cursor()
             cur.execute("SELECT * FROM Funcionario WHERE usuario_rut = %s;", (rut,))
             flag = cur.fetchone() is not None
-        elif rol == "ingeniero":
+        elif rol == "administrador":
             cur = conn.cursor()
-            cur.execute("SELECT * FROM Ingeniero WHERE usuario_rut = %s;", (rut,))
+            cur.execute("SELECT * FROM Administrador WHERE usuario_rut = %s;", (rut,))
             flag = cur.fetchone() is not None
         elif rol == "director":
             cur = conn.cursor()
             cur.execute("SELECT * FROM Director WHERE usuario_rut = %s;", (rut,))
-            flag = cur.fetchone() is not None
-        elif rol == "subdirector":
-            cur = conn.cursor()
-            cur.execute("SELECT * FROM Subdirector WHERE usuario_rut = %s;", (rut,))
             flag = cur.fetchone() is not None
         else:
             raise ValueError("Rol no válido")
@@ -120,9 +111,8 @@ def getRolesUsuario(rut, query_type="all", rol=None):
 
     return {
         "funcionario": es_funcionario,
-        "ingeniero": es_ingeniero,
         "director": es_director,
-        "subdirector": es_subdirector
+        "administrador": es_administrador
     }
 
 
@@ -142,10 +132,10 @@ def getRolEmplacements(rut,
             JOIN Emplazamiento e ON u.emplazamiento_id = e.id_emplazamiento
             WHERE f.usuario_rut = %s;
         """, (rut,))
-    elif rol == "ingeniero":
+    elif rol == "administrador":
         cur.execute("""
             SELECT DISTINCT e.id_emplazamiento, e.nombre, e.sigla
-            FROM Ingeniero i
+            FROM Administrador i
             JOIN Emplazamiento e ON i.emplazamiento_id = e.id_emplazamiento
             WHERE i.usuario_rut = %s;
         """, (rut,))

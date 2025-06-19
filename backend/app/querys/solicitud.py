@@ -67,7 +67,7 @@ def Get():
     ]
 
 def GetAllEmplazamiento(emplazamientos_id=None):
-    print("Procesando GetAllIngeniero con emplazamientos_id:", emplazamientos_id)
+    print("Procesando GetAllAdministrador con emplazamientos_id:", emplazamientos_id)
     conn = get_connection()
     if conn is None:
         raise ConnectionError("No se pudo conectar a la base de datos")

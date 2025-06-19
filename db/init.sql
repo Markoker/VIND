@@ -99,14 +99,6 @@ CREATE TABLE Asignatura (
     FOREIGN KEY (departamento_id) REFERENCES UnidadAcademica(id_unidad_academica)
 );
 
-CREATE TABLE AsignaturaSolicitud (
-    id SERIAL PRIMARY KEY,
-    solicitud_id INT NOT NULL,
-    asignatura_id INT NOT NULL,
-    FOREIGN KEY (solicitud_id) REFERENCES Solicitud(id_solicitud),
-    FOREIGN KEY (asignatura_id) REFERENCES Asignatura(id_asignatura)
-);
-
 -- Visitas y visitantes
 CREATE TABLE Visita (
     id_visita SERIAL PRIMARY KEY,
@@ -214,5 +206,14 @@ CREATE TABLE HistorialEstadoItem (
     fecha_decision TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solicitud_id) REFERENCES Solicitud(id_solicitud),
     FOREIGN KEY (usuario_decision_rut) REFERENCES Usuario(rut)
+);
+
+
+CREATE TABLE AsignaturaSolicitud (
+    id SERIAL PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    asignatura_id INT NOT NULL,
+    FOREIGN KEY (solicitud_id) REFERENCES Solicitud(id_solicitud),
+    FOREIGN KEY (asignatura_id) REFERENCES Asignatura(id_asignatura)
 );
 

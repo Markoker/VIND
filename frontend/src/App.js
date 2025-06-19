@@ -7,7 +7,7 @@ import { SignUp } from './Pages/Login/Signup';
 import { Login } from './Pages/Login/Login';
 import { SelectProfile } from './Pages/selectProfile';
 import { VerSolicitudesF } from './Pages/funcionario/verSolicitudes'
-import { VerSolicitudesI } from './Pages/ingeniero/verSolicitudes'
+import { VerSolicitudesI } from './Pages/administrador/verSolicitudes'
 
 import { Dashboard } from './Pages/Dashboard';
 import { DashboardFuncionario } from './Pages/funcionario/dashboard-funcionario';
@@ -18,7 +18,7 @@ import { DashboardSubdirector } from './Pages/subdirector/dashboard-subdirector'
 //import { ListadoAsistentes } from './Pages/funcionario/solicitud/ListadoAsistentes';
 import { TipoCotizacion } from './Pages/funcionario/solicitud/TipoCotizacion';
 import { Presupuestos } from './Pages/Presupuesto';
-import { DetalleSolicitudI } from './Pages/ingeniero/detalleSolicitud';
+import { DetalleSolicitudI } from './Pages/administrador/detalleSolicitud';
 import { DetalleSolicitudS } from './Pages/subdirector/detalleSolicitud';
 import { DashboardDirector } from './Pages/director/dashboard-director';
 import { VerSolicitudesD } from './Pages/director/verSolicitudesD';
@@ -39,8 +39,8 @@ import { RevisarDevolucion } from './Pages/contador/RevisarDevolucion';
 import { PrivateRoute } from './PrivateRoute';
 import { Logout } from './Pages/Login/logout';
 import {Encargados} from "./Pages/funcionario/solicitud/encargados";
-import {DashboardIngeniero} from "./Pages/ingeniero/dashboard-ingeniero";
-import {SolicitudI} from "./Pages/ingeniero/solicitud/solicitudI";
+import {DashboardAdministrador} from "./Pages/administrador/dashboard-administrador";
+import {SolicitudI} from "./Pages/administrador/solicitud/solicitudI";
 
 function App() {
   return (
@@ -61,7 +61,7 @@ function App() {
       />
 
       <Route
-          path="/funcionario/solicitudes"
+          path="/funcionario/solicitud/:id"
           element={
               <PrivateRoute allowedRoles={["funcionario"]}>
                 <VerSolicitudesF />
@@ -102,27 +102,27 @@ function App() {
       />
 
       <Route
-        path="/ingeniero/dashboard"
+        path="/administrador/dashboard"
         element={
-          <PrivateRoute allowedRoles={["ingeniero"]}>
-            <DashboardIngeniero />
+          <PrivateRoute allowedRoles={["administrador"]}>
+            <DashboardAdministrador />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/ingeniero/solicitudes"
+        path="/administrador/solicitudes"
         element={
-          <PrivateRoute allowedRoles={["ingeniero"]}>
+          <PrivateRoute allowedRoles={["administrador"]}>
             <VerSolicitudesI />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/ingeniero/solicitudes/:id"
+        path="/administrador/solicitudes/:id"
         element={
-          <PrivateRoute allowedRoles={["ingeniero"]}>
+          <PrivateRoute allowedRoles={["administrador"]}>
             <DetalleSolicitudI />
           </PrivateRoute>
         }
@@ -131,7 +131,7 @@ function App() {
       <Route
         path="/presupuestos"
         element={
-          <PrivateRoute allowedRoles={["funcionario", "ingeniero"]}>
+          <PrivateRoute allowedRoles={["funcionario", "administrador"]}>
             <Presupuestos />
           </PrivateRoute>
         }

@@ -11,9 +11,8 @@ export function SelectProfile(){
 
     // Obtenemos el rol del usuario desde la API
     const [isFuncionario, setIsFuncionario] = React.useState(false);
-    const [isIngeniero, setIsIngeniero] = React.useState(false);
+    const [isAdministrador, setIsAdministrador] = React.useState(false);
     const [isDirector, setIsDirector] = React.useState(false);
-    const [isSubdirector, setIsSubdirector] = React.useState(false);
 
     React.useEffect(() => {
         fetch(`http://localhost:8000/usuario/${rut}/rol`)
@@ -21,16 +20,14 @@ export function SelectProfile(){
         .then(data => {
             console.log(data);
             setIsFuncionario(data.funcionario);
-            setIsIngeniero(data.ingeniero);
+            setIsAdministrador(data.administrador);
             setIsDirector(data.director);
-            setIsSubdirector(data.subdirector);
 
             // Guardar un array con los roles del usuario en localStorage
             const roles = [];
             if (data.funcionario) roles.push("funcionario");
-            if (data.ingeniero) roles.push("ingeniero");
+            if (data.administrador) roles.push("administrador");
             if (data.director) roles.push("director");
-            if (data.subdirector) roles.push("subdirector");
             localStorage.setItem("userRoles", JSON.stringify(roles));
         })
         .catch(error => console.error(error));
@@ -44,17 +41,13 @@ export function SelectProfile(){
                     <h2>Funcionario</h2>
                     <Link to="/funcionario/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "funcionario")}>Ir a Funcionario</Link>
                 </div>}
-                {isIngeniero && <div className="home-section">
-                    <h2>Ingeniero</h2>
-                    <Link to="/ingeniero/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "ingeniero")}>Ir a Ingeniero</Link>
+                {isAdministrador && <div className="home-section">
+                    <h2>Administrador</h2>
+                    <Link to="/administrador/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "administrador")}>Ir a Administrador</Link>
                 </div>}
                 {isDirector && <div className="home-section">
                     <h2>Director</h2>
                     <Link to="/director/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "director")}>Ir a Director</Link>
-                </div>}
-                {isSubdirector && <div className="home-section">
-                    <h2>Subdirector</h2>
-                    <Link to="/subdireccion/dashboard" className="home-button" onClick={() => localStorage.setItem("perfilActivo", "subdirector")}>Ir a Subdirector</Link>
                 </div>}
             </div>
         </div>

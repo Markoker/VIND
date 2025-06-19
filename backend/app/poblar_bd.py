@@ -358,8 +358,8 @@ def generar_solicitud(rut_usuario=None, estado=2):
 
 # Ejecutar los generadores de datos
 if __name__ == "__main__":
-    borrar_datos()
-    reiniciar_secuencias()
+    #borrar_datos()
+    #reiniciar_secuencias()
 
     cargar_datos_universidad('DATA.xlsx')
     generar_usuarios()

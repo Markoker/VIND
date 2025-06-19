@@ -197,15 +197,15 @@ def obtener_solicitudes():
 @solicitud_router.get("/funcionario/{rut}")
 def obtener_solicitudes_funcionario(rut: str, unidad_academica_id: Optional[int] = None):
     try:
-        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id, query_from="subdirector")
+        solicitudes = Solicitud.GetPorUnidad(rut, unidad_academica_id, query_from="funcionario")
         if solicitudes:
             return solicitudes
         raise HTTPException(status_code=404, detail="No se encontraron solicitudes para este usuario.")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-@solicitud_router.get("/ingeniero/{rut}")
-def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = None, unidad_academica_id: Optional[int] = None):
+@solicitud_router.get("/administrador/{rut}")
+def obtener_solicitudes_administrador(rut: str, emplazamiento_id: Optional[int] = None, unidad_academica_id: Optional[int] = None):
     print("→ FILTROS RECIBIDOS")
     print("RUT:", rut)
     print("emplazamiento_id:", emplazamiento_id)
@@ -220,7 +220,7 @@ def obtener_solicitudes_ingeniero(rut: str, emplazamiento_id: Optional[int] = No
         elif emplazamiento_id:
             solicitudes = Solicitud.GetAllEmplazamiento([emplazamiento_id])
         else:
-            emplazamientos = Usuario.getRolEmplacements(rut, "ingeniero")
+            emplazamientos = Usuario.getRolEmplacements(rut, "administrador")
             emplazamiento_ids = [e["id"] for e in emplazamientos]
             solicitudes = Solicitud.GetAllEmplazamiento(emplazamiento_ids)
         return solicitudes

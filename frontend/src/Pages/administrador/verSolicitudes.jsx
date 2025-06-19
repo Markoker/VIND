@@ -18,7 +18,7 @@ export function VerSolicitudesI({ rut }) {
         // Obtener unidades académicas disponibles
         const fetchEmplazamientos = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/ingeniero/emplazamiento`);
+                const response = await axios.get(`http://localhost:8000/usuario/${rut}/rol/administrador/emplazamiento`);
                 setEmplazamientos(response.data);
             } catch (err) {
                 setError(
@@ -35,7 +35,7 @@ export function VerSolicitudesI({ rut }) {
     useEffect(() => {
         const fetchSolicitudes = async () => {
             try {
-                let url = `http://localhost:8000/solicitudes/ingeniero/${rut}`;
+                let url = `http://localhost:8000/solicitudes/administrador/${rut}`;
                 const params = new URLSearchParams();
 
                 if (emplazamientoId) params.append("emplazamiento_id", emplazamientoId);

@@ -16,13 +16,13 @@ def getPresupuestosPorPerfil(rut, perfil):
             JOIN Emplazamiento e ON ua.emplazamiento_id = e.id_emplazamiento
             WHERE f.usuario_rut = %s
         """, (rut,))
-    elif perfil in ["ingeniero", "director"]:
+    elif perfil in ["administrador", "director"]:
         cur.execute("""
             SELECT DISTINCT ua.nombre, ua.presupuesto, ua.gasto, e.nombre
             FROM UnidadAcademica ua
             JOIN Emplazamiento e ON ua.emplazamiento_id = e.id_emplazamiento
             WHERE e.id_emplazamiento IN (
-                SELECT emplazamiento_id FROM Ingeniero WHERE usuario_rut = %s
+                SELECT emplazamiento_id FROM Administrador WHERE usuario_rut = %s
                 UNION
                 SELECT emplazamiento_id FROM Director WHERE usuario_rut = %s
             )
