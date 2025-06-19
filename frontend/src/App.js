@@ -54,6 +54,9 @@ import { FirmarCotizacionColacionDirector } from './Pages/director/firmarCotizac
 import { FirmarCotizacionTrasladoDirector } from './Pages/director/firmarCotizacionTraslado';
 import { FirmarFacturaDirector } from './Pages/director/firmarFactura';
 import { DetalleCotizacionDirector } from './Pages/director/detalleCotizacion';
+import { DetalleColacionDirector } from './Pages/director/detalleColacion';
+import { DetalleTrasladoDirector } from './Pages/director/detalleTraslado';
+
 
 // Funcionario
 import { SubirFacturaFuncionario } from './Pages/funcionario/subirFactura';
@@ -300,6 +303,23 @@ function App() {
         }
       />
 
+      <Route
+        path='/director/detalle-colacion/:id'
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <DetalleColacionDirector />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path='/director/detalle-traslado/:id'
+        element={
+          <PrivateRoute allowedRoles={["director"]}>
+            <DetalleTrasladoDirector />
+          </PrivateRoute>
+        }
+      />
       <Route
           path="/logout"
           element={<Logout />}

@@ -136,6 +136,42 @@ export function DetalleCotizacionDirector() {
                 </div>
             )}
 
+            {detalle.estado === 3 && (
+                <div style={{marginTop: "20px"}}>
+                    <h3>Firma de cotización</h3>
+                    {detalle.cotizacion.tipo === "colacion" && (
+                    <button onClick={() => navigate(`/director/firmar-cotizacion-colacion/${detalle.id}`)}>
+                        Ir a Firma de Cotización de Colación
+                    </button>
+                    )}
+                    {detalle.cotizacion.tipo === "traslado" && (
+                    <button onClick={() => navigate(`/director/firmar-cotizacion-traslado/${detalle.id}`)}>
+                        Ir a Firma de Cotización de Traslado
+                    </button>
+                    )}
+                    {detalle.cotizacion.tipo === "mixta" && (
+                    <>
+                        <button onClick={() => navigate(`/director/firmar-cotizacion-colacion/${detalle.id}`)}>
+                        Firmar Cotización de Colación
+                        </button>
+                        <button onClick={() => navigate(`/director/firmar-cotizacion-traslado/${detalle.id}`)}>
+                        Firmar Cotización de Traslado
+                        </button>
+                    </>
+                    )}
+                </div>
+                )}
+
+                {detalle.estado === 5 && (
+                <div style={{marginTop: "20px"}}>
+                    <h3>Firma de facturas</h3>
+                    <button onClick={() => navigate(`/director/firmar-factura/${detalle.id}`)}>
+                    Ir a Firma de Facturas
+                    </button>
+                </div>
+                )}
+
+
             <br/>
             <button onClick={() => navigate("/director/solicitudes")}>Volver</button>
         </div>
